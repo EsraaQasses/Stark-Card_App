@@ -20,8 +20,9 @@ export default function App() {
         <Stack.Screen name="SignUp" component={SignUp} />
         <Stack.Screen name="SignUpEmail" component={SignUpEmail} />
         <Stack.Screen name="SignUpPhone" component={SignUpPhone} />
-        <Stack.Screen name="SignUpEmailExtra" component={SignUpEmailExtra} />
-        <Stack.Screen name="SignUpPhoneExtra" component={SignUpPhoneExtra} />
+        <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="Verification" component={Verification} />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );
