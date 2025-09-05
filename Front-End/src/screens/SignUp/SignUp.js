@@ -22,9 +22,9 @@ export default function SignUp({ navigation }) {
         <View style={styles.body}>
           <Text style={styles.title}>Continue to the app by</Text>
 
-          <Botton title="By Email" onPress={() => navigation.navigate("Email")} width={sx(300)} height={sy(60)} />
-          <Botton title="By Phone Number" onPress={() => navigation.navigate("Phone")} width={sx(300)} height={sy(60)} />
-          <Botton title="By Google" onPress={() => {}} width={sx(300)} height={sy(60)} />
+          <Botton title="By Email" onPress={() => navigation.navigate("Email")} width={sx(330)} height={sy(60)} />
+          <Botton title="By Phone Number" onPress={() => navigation.navigate("Phone")} width={sx(330)} height={sy(60)} />
+          <Botton title="By Google" onPress={() => {}} width={sx(330)} height={sy(60)} />
         </View>
 
         <Text style={styles.footer}>©2025 STARK-CARD</Text>

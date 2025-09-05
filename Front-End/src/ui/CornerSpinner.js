@@ -23,15 +23,16 @@ export default function CornerSpinner({ size = 300, image, speedMs = 12000, opac
   return (
     <Animated.Image
       source={image}
-      resizeMode="contain"
+      resizeMode="cover"
       pointerEvents="none"
       style={[
         styles.corner,
         {
           width: size,
           height: size,
-          top: -size / 2,   // center the image at top-left (0,0)
+          top: -size / 2,   // يخلي المركز عند الزاوية العليا اليسار
           left: -size / 2,
+          borderRadius: size / 2, // ⬅️ هي اللي بتخليه دائري
           opacity,
           transform: [{ rotate }],
         },
@@ -42,7 +43,10 @@ export default function CornerSpinner({ size = 300, image, speedMs = 12000, opac
 
 const styles = StyleSheet.create({
   corner: {
-    position: "absolute",
-    zIndex: 0,
-  },
+  position: "absolute",
+  top: 0, left: 0, right: 0,
+  height: 300,   
+  zIndex: -2,    
+},
+
 });

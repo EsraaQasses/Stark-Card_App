@@ -1,5 +1,5 @@
-// /src/screens/Home.js
-import React, { useMemo, useRef, useState } from "react";
+// src/screens/Home.js
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,47 +8,83 @@ import {
   Pressable,
   TextInput,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
   FlatList,
   Animated,
   I18nManager,
+  Text as RNText,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
 import { useTranslation } from "react-i18next";
 
 import Screenn from "../ui/Screenn";
 import CornerSpinner from "../ui/CornerSpinner";
+import NavBar from "../ui/NavBar";
 import { setAppLanguage } from "../utils/lang";
 
-const { width: W, height: H } = Dimensions.get("window");
-const BASE_W = 390, BASE_H = 844;
-const sx = (n) => (W / BASE_W) * n;
-const sy = (n) => (H / BASE_H) * n;
-const RADIUS = sx(22);
+// ---- palette
+const COLOR = {
+  primary: "#0B63D8",
+  text: "#0E1B3B",
+  muted: "#7C8DA6",
+  bgSoft: "#F3F7FB",
+  line: "#E4ECF2",
+  white: "#FFFFFF",
+};
+
+// ---- base for responsive scaling
+const BASE_W = 390;
+const BASE_H = 844;
 
 const BANNERS = [{ id: "b1" }, { id: "b2" }, { id: "b3" }];
-const GRID = [
-  { id: "g1", titleKey: "games" },
-  { id: "g2", titleKey: "" },
-  { id: "g3", titleKey: "entertainments" },
-  { id: "g4", titleKey: "liveApps" },
-  { id: "g5", titleKey: "" },
-  { id: "g6", titleKey: "" },
-];
+const SECTIONS = ["Section 1", "Section 2", "Section 3", "Section 4", "Section 5", "Section 6"];
 
 export default function Home({ navigation }) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
+  // responsive helpers that update on every render
+  const { width: W, height: H } = useWindowDimensions();
+  const sx = (n) => (W / BASE_W) * n;
+  const sy = (n) => (H / BASE_H) * n;
+  const RADIUS = sx(20);
+
+  // keep text boxes stable across devices (ignore OS font scaling)
+  if (!RNText.defaultProps) RNText.defaultProps = {};
+  RNText.defaultProps.allowFontScaling = false;
+
+  // OPTIONAL: match Android system nav bar to white theme (no weird band below)
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS === "android") {
+        try {
+          const NavigationBar = await import("expo-navigation-bar");
+          await NavigationBar.setBackgroundColorAsync(COLOR.white);
+          await NavigationBar.setButtonStyleAsync("dark");
+        } catch {}
+      }
+    })();
+  }, []);
+
   const [currency, setCurrency] = useState("USD");
   const [flag, setFlag] = useState(require("../assets/flags/us.png"));
   const [search, setSearch] = useState("");
   const pagerX = useRef(new Animated.Value(0)).current;
+  const [pageWidth, setPageWidth] = useState(W); // banner width (after clamp)
 
-  const headerTop = useMemo(() => insets.top + sy(12), [insets.top]);
-  const NAV_H = sy(64) + Math.max(insets.bottom, sy(10));
+  const headerTop = useMemo(() => insets.top + sy(8), [insets.top, H]);
+
+  // bottom nav sizes
+  const NAV_HEIGHT = sy(64);
+  const NAV_BOTTOM_OFFSET = sy();
+
+  // content bottom padding so last row is never hidden under nav bar
+  const contentPadBottom = useMemo(
+    () => NAV_HEIGHT + insets.bottom + sy(12),
+    [NAV_HEIGHT, insets.bottom, H]
+  );
 
   const handleCurrency = async (opt) => {
     setCurrency(opt);
@@ -61,137 +97,236 @@ export default function Home({ navigation }) {
     }
   };
 
+  // max content width (keeps things neat on tablets)
+  const MAX_W = 480;
+
   return (
-    <Screenn useDefaultBg={false} bgColor="#ffffff">
-      {/* corner ornament */}
-      <View pointerEvents="none" style={styles.cornerWrap}>
-        <CornerSpinner
-          size={sx(1500)}
-          image={require("../assets/home-corner.png")}
-          speedMs={12000}
-        />
-      </View>
-
+    <Screenn useDefaultBg={false} bgColor={COLOR.white}>
+      {/* Sticky header is the FIRST direct child of the ScrollView */}
       <ScrollView
+        style={{ backgroundColor: COLOR.white }}
+        stickyHeaderIndices={[0]}
+        bounces={false}
+        overScrollMode="never"
+        contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: NAV_H + sy(24) }}
+        contentContainerStyle={{ paddingBottom: contentPadBottom }}
       >
-        {/* frosted header */}
-        <View style={[styles.headerWrap, { marginTop: headerTop }]}>
-          <BlurView intensity={55} tint="light" style={styles.headerRow}>
-            <Pressable
-              style={styles.iconBtn}
-              accessibilityLabel="profile"
-              onPress={() => navigation.navigate("profile")}
-            > 
-                <Image source={require("../assets/icons/user.png")} style={styles.headerIcon} />
-            </Pressable>
+        {/* HEADER (sticky) */}
+        <View style={{ backgroundColor: "transparent" }}>
+          <View style={{ alignSelf: "center", width: "100%", maxWidth: MAX_W }}>
+            <View style={{ marginTop: headerTop, paddingHorizontal: sx(14) }}>
+              <View
+                style={[
+                  styles.header,
+                  { flexDirection: I18nManager.isRTL ? "row-reverse" : "row", borderRadius: RADIUS },
+                ]}
+              >
+                <Image
+                  source={flag}
+                  style={[styles.flag, { width: sx(30), height: sy(22) }]}
+                  resizeMode="contain"
+                />
 
-            <Pressable style={styles.iconBtn} accessibilityLabel="Notifications">
-              <Image source={require("../assets/icons/bell.png")} style={styles.headerIcon} />
-            </Pressable>
+                <Segment options={["SYR", "USD"]} value={currency} onChange={handleCurrency} sx={sx} sy={sy} />
 
-            <View style={{ flex: 1 }} />
+                <View style={{ flex: 1 }} />
 
-            <View style={styles.currencyWrap}>
-              <TogglePill
-                options={["USD", "SYR"]}
-                value={currency}
-                onChange={handleCurrency}
-              />
-            </View>
-
-            <Image source={flag} style={styles.flag} resizeMode="contain" />
-          </BlurView>
-        </View>
-
-        {/* banner */}
-        <View style={styles.bannerWrap}>
-          <FlatList
-            data={BANNERS}
-            keyExtractor={(it) => it.id}
-            horizontal
-            pagingEnabled
-            removeClippedSubviews
-            showsHorizontalScrollIndicator={false}
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { x: pagerX } } }],
-              { useNativeDriver: false }
-            )}
-            renderItem={() => (
-              <View style={styles.bannerCard}>
-                <LinearGradient
-                  colors={["#E8EEF9", "#DCEBFF"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
+                <IconButton
+                  src={require("../assets/icons/bell.png")}
+                  onPress={() => navigation.navigate("Notifications")} hitSlop={10}
+                  alt="Notifications"
+                  sx={sx}
+                  sy={sy}
+                />
+                <IconButton
+                  src={require("../assets/icons/user.png")}
+                  alt="Profile"
+                  sx={sx}
+                  sy={sy}
+                  onPress={() => navigation.navigate("Profile")}
                 />
               </View>
-            )}
+            </View>
+          </View>
+          {/* subtle bottom divider for the sticky header */}
+          <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: COLOR.line }} />
+        </View>
+
+        {/* Corner spinner background */}
+        <View pointerEvents="none" style={styles.spinnerBg}>
+          <CornerSpinner
+            size={sx(800)}
+            image={require("../assets/home-corner.png")}
+            speedMs={16000}
+            opacity={0.88}
           />
         </View>
 
-        {/* dots */}
-        <Dots count={BANNERS.length} pagerX={pagerX} />
-
-        {/* glassy search — Figma accurate */}
-        <View style={{ paddingHorizontal: sx(16), marginTop: sy(10) }}>
-          {/* The ScrollView content is our positioning context.
-              We mimic Figma’s 390×50 box and text starting at x=50.
-              Since our container has left padding 16, paddingLeft becomes 50-14=36 -> sx(34) approx (we used 34 to account for 16 vs 14). */}
-          <BlurView intensity={40} tint="light" style={[styles.searchWrap, { paddingLeft: sx(34) }]}>
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder={t("search") || "Search"}
-              placeholderTextColor="#15025B"
-              style={styles.searchInput}
-              returnKeyType="search"
-              onSubmitEditing={() => {}}
+        {/* BODY (inside a centered clamp) */}
+        <View style={{ alignSelf: "center", width: "100%", maxWidth: MAX_W }}>
+          {/* Banner carousel */}
+          <View
+            style={[styles.bannerWrap, { marginTop: sy(10), paddingHorizontal: sx(14) }]}
+            onLayout={(e) => setPageWidth(e.nativeEvent.layout.width)}
+          >
+            <FlatList
+              data={BANNERS}
+              keyExtractor={(it) => it.id}
+              horizontal
+              pagingEnabled
+              snapToInterval={pageWidth}
+              decelerationRate="fast"
+              showsHorizontalScrollIndicator={false}
+              bounces={false}
+              overScrollMode="never"
+              onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: pagerX } } }], {
+                useNativeDriver: false,
+              })}
+              renderItem={() => (
+                <View style={[styles.bannerCard, { width: pageWidth, borderRadius: RADIUS }]}>
+                  <LinearGradient
+                    colors={["#ECF4FF", "#E7F5FF"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </View>
+              )}
             />
-            {/* Right ellipse 41×41 with 24×24 icon */}
-            <View style={styles.searchCircle}>
-              <Pressable style={styles.searchCircleBtn} onPress={() => {}} accessibilityLabel="Search">
+          </View>
+
+          <Dots count={BANNERS.length} pagerX={pagerX} pageW={pageWidth} sx={sx} sy={sy} />
+
+          {/* Search */}
+          <View style={{ paddingHorizontal: sx(14), marginTop: sy(12) }}>
+            <View
+              style={[
+                styles.search,
+                {
+                  flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
+                  borderRadius: sy(25),
+                  height: sy(50),
+                },
+              ]}
+            >
+              <View style={[styles.searchIconWrap, { width: sy(34), height: sy(34), borderRadius: sy(17) }]}>
                 <Image
-                  source={require("../assets/icons/search.png")} // change to .jpg if needed
-                  style={{ width: sx(24), height: sx(24) }}
+                  source={require("../assets/icons/search.png")}
+                  style={{ width: sx(18), height: sx(18), tintColor: COLOR.primary }}
                   resizeMode="contain"
                 />
-              </Pressable>
+              </View>
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder={t("search") || "Search"}
+                placeholderTextColor={COLOR.text}
+                style={[
+                  styles.searchInput,
+                  {
+                    textAlign: I18nManager.isRTL ? "right" : "left",
+                    fontSize: sx(18),
+                    color: COLOR.text,
+                  },
+                ]}
+                returnKeyType="search"
+              />
             </View>
-          </BlurView>
-        </View>
+          </View>
 
-        {/* grid */}
-        <View style={styles.gridWrap}>
-          {GRID.map((c) => (
-            <CategoryCard key={c.id} title={c.titleKey ? t(c.titleKey) : ""} />
-          ))}
+          {/* 2-column grid */}
+          <View style={[styles.grid, { paddingHorizontal: sx(14), marginTop: sy(14), rowGap: sy(14) }]}>
+            {SECTIONS.map((label) => (
+              <Pressable
+                key={label}
+                style={({ pressed }) => [
+                  styles.card,
+                  { width: "48.5%", borderRadius: RADIUS },
+                  pressed && { transform: [{ scale: 0.98 }], opacity: 0.95 },
+                ]}
+              >
+                <View
+                  style={{
+                    width: "100%",
+                    aspectRatio: 1,
+                    borderRadius: sx(12),
+                    backgroundColor: "#E8EFF7",
+                    borderWidth: 1,
+                    borderColor: COLOR.line,
+                  }}
+                />
+                <Text
+                  style={{
+                    marginTop: sx(10),
+                    textAlign: "center",
+                    color: COLOR.text,
+                    fontWeight: "800",
+                    fontSize: sx(16),
+                  }}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       </ScrollView>
 
-      {/* floating bottom bar */}
-      <BottomNav insetBottom={insets.bottom} />
+      {/* white cover under the nav bar (like before) */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: insets.bottom + NAV_HEIGHT + NAV_BOTTOM_OFFSET + sy(6),
+          backgroundColor: COLOR.white,
+          zIndex: 5,
+        }}
+      />
+
+      {/* THE ONLY bottom nav bar (shared component) */}
+      <NavBar
+        active="home"
+        insetBottom={insets.bottom + NAV_BOTTOM_OFFSET}
+        onPressHome={() => navigation.navigate("Home")}
+        onPressMenu={() => navigation.navigate("Menu")}
+        onPressDownloads={() => navigation.navigate("Downloads")}
+        onPressQR={() => navigation.navigate("QR")}
+        onPressSend={() => navigation.navigate("Send")}
+      />
     </Screenn>
   );
 }
 
-/* ---------- sub components ---------- */
+/* ---------- small building blocks inline ---------- */
 
-function TogglePill({ options, value, onChange }) {
+function IconButton({ src, onPress, alt, sx, sy }) {
   return (
-    <View style={styles.toggleV2}>
+    <Pressable onPress={onPress} accessibilityLabel={alt} style={[styles.iconBtn, { borderRadius: sx(18) }]}>
+      <Image source={src} style={{ width: sx(18), height: sy(18), tintColor: COLOR.text }} />
+    </Pressable>
+  );
+}
+
+function Segment({ options, value, onChange, sx, sy }) {
+  return (
+    <View style={[styles.segment, { padding: sx(3), borderRadius: sx(10) }]}>
       {options.map((opt) => {
         const active = opt === value;
         return (
           <Pressable
             key={opt}
             onPress={() => onChange(opt)}
-            style={[styles.toggleChip, active && styles.toggleChipActive]}
+            style={[
+              styles.segPill,
+              { paddingVertical: sy(6), paddingHorizontal: sx(12), borderRadius: sx(8) },
+              active && styles.segPillActive,
+            ]}
           >
-            <Text style={[styles.toggleChipTxt, active && styles.toggleChipTxtActive]}>
-              {opt}
-            </Text>
+            <Text style={[styles.segText, active && styles.segTextActive]}>{opt}</Text>
           </Pressable>
         );
       })}
@@ -199,248 +334,112 @@ function TogglePill({ options, value, onChange }) {
   );
 }
 
-function Dots({ count, pagerX }) {
-  const [w] = useState(W);
+function Dots({ count, pagerX, pageW, sx, sy }) {
   return (
-    <View style={styles.dotsRow}>
+    <View style={[styles.dotsRow, { marginTop: sy(8) }]}>
       {Array.from({ length: count }).map((_, i) => {
-        const input = [(i - 1) * w, i * w, (i + 1) * w];
+        const input = [(i - 1) * pageW, i * pageW, (i + 1) * pageW];
         const dotW = pagerX.interpolate({
           inputRange: input,
-          outputRange: [sx(6), sx(18), sx(6)],
+          outputRange: [sx(6), sx(16), sx(6)],
           extrapolate: "clamp",
         });
         const op = pagerX.interpolate({
           inputRange: input,
-          outputRange: [0.4, 1, 0.4],
+          outputRange: [0.45, 1, 0.45],
           extrapolate: "clamp",
         });
-        return <Animated.View key={i} style={[styles.dot, { width: dotW, opacity: op }]} />;
+        return (
+          <Animated.View
+            key={i}
+            style={[styles.dot, { width: dotW, height: sy(6), borderRadius: sy(3), opacity: op }]}
+          />
+        );
       })}
     </View>
   );
 }
 
-function CategoryCard({ title }) {
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.catCard,
-        pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 },
-      ]}
-    >
-      <View style={styles.catThumb} />
-      {!!title && <Text style={styles.catTitle}>{title}</Text>}
-    </Pressable>
-  );
-}
-
-function BottomNav({ insetBottom = 0 }) {
-  const Item = ({ icon, label }) => (
-    <Pressable style={styles.navItem} accessibilityLabel={label}>
-      <Image source={icon} style={styles.navIcon} />
-    </Pressable>
-  );
-  return (
-    <View style={[styles.navBar, { paddingBottom: insetBottom }]}>
-      <View style={styles.homeWrap}>
-        <Image source={require("../assets/icons/home.png")} style={styles.homeIcon} />
-      </View>
-      <Item icon={require("../assets/icons/send.png")} label="Send" />
-      <Item icon={require("../assets/icons/qr.png")} label="QR" />
-      <Item icon={require("../assets/icons/downloads.png")} label="Downloads" />
-      <Item icon={require("../assets/icons/menu.png")} label="Menu" />
-    </View>
-  );
-}
-
-/* ---------- styles ---------- */
+/* ---------------- styles ---------------- */
 const styles = StyleSheet.create({
-  cornerWrap: { position: "absolute", top: 0, left: 0, zIndex: 0 },
-
-  headerWrap: { paddingHorizontal: sx(16) },
-  headerRow: {
-    flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
+  header: {
+    backgroundColor: "rgba(255,255,255,0.92)",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     alignItems: "center",
-    paddingHorizontal: sx(14),
-    paddingVertical: sy(8),
-    borderRadius: sx(20),
-    overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.35)",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(15,23,42,0.06)",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    borderColor: COLOR.line,
   },
+  flag: { borderRadius: 4, marginHorizontal: 8 },
+
+  segment: {
+    flexDirection: "row",
+    backgroundColor: COLOR.bgSoft,
+    borderWidth: 1,
+    borderColor: COLOR.line,
+  },
+  segPill: {},
+  segPillActive: {
+    backgroundColor: COLOR.white,
+    borderWidth: 1,
+    borderColor: COLOR.line,
+  },
+  segText: { color: COLOR.muted, fontWeight: "700" },
+  segTextActive: { color: COLOR.primary },
+
   iconBtn: {
-    width: sx(40),
-    height: sy(40),
-    borderRadius: sx(20),
+    width: 36,
+    height: 36,
+    marginStart: 8,
+    backgroundColor: COLOR.bgSoft,
     alignItems: "center",
     justifyContent: "center",
-    marginStart: sx(8),
-    backgroundColor: "rgba(244,247,251,0.8)",
+    borderWidth: 1,
+    borderColor: COLOR.line,
   },
-  headerIcon: { width: sx(20), height: sy(20), tintColor: "#111827" },
-  currencyWrap: { marginStart: sx(10) },
-  flag: { width: sx(32), height: sy(22), borderRadius: sx(4), marginStart: sx(8) },
 
-  bannerWrap: { marginTop: sy(12), height: sy(132) },
+  bannerWrap: {},
   bannerCard: {
-    width: W,
-    paddingHorizontal: sx(16),
-    height: "100%",
+    aspectRatio: 16 / 9,
     justifyContent: "center",
-    borderRadius: RADIUS,
     overflow: "hidden",
   },
 
-  dotsRow: {
-    marginTop: sy(8),
-    flexDirection: "row",
+  dotsRow: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
+  dot: { backgroundColor: COLOR.primary, marginHorizontal: 3 },
+
+  search: {
+    alignSelf: "stretch",
+    backgroundColor: "rgba(235,245,255,0.85)",
+    borderWidth: 1,
+    borderColor: COLOR.line,
+    alignItems: "center",
+    paddingHorizontal: 10,
+  },
+  searchIconWrap: {
+    backgroundColor: "#EAF3FF",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: COLOR.line,
+    marginHorizontal: 6,
   },
-  dot: {
-    height: sy(6),
-    borderRadius: sy(3),
-    backgroundColor: "#3B82F6",
-    marginHorizontal: sx(3),
+  searchInput: { flex: 1 },
+
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  card: {
+    padding: 10,
+    backgroundColor: COLOR.white,
+    borderWidth: 1,
+    borderColor: COLOR.line,
   },
 
-  /* Search (Figma-style) */
-  searchWrap: {
-    width: sx(360),               // exact Figma width scaled to device
-    height: sy(50),
-    borderRadius: sy(25),         // Figma radius 24 -> 25 for crisp scaling
-    overflow: "hidden",
-    backgroundColor: "#d6f5ffd0",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.10)",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 15 },
-    alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingRight: sx(10),
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: sx(20),
-    lineHeight: sy(24),
-    color: "#15025B",
-    textAlign: I18nManager.isRTL ? "right" : "left",
-  },
-  searchCircle: {
-  width: sy(41),
-  height: sy(41),
-  borderRadius: sy(20.5),
-  backgroundColor: "rgba(214,245,255,0.55)",   // light aqua tint
-  alignItems: "center",
-  justifyContent: "center",
-
-  // outer soft shadow (depth)
-  shadowColor: "#000",
-  shadowOpacity: 0.12,
-  shadowRadius: 6,
-  shadowOffset: { width: 0, height: 3 },
-
-  // subtle border to make it crisp
-  borderWidth: StyleSheet.hairlineWidth,
-  borderColor: "rgba(0,0,0,0.05)",
-},
-
-  searchCircleBtn: {
-    width: "100%",
-    height: "100%",
-    borderRadius: sy(20.5),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  gridWrap: {
-    paddingHorizontal: sx(16),
-    marginTop: sy(16),
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  catCard: {
-    width: (W - sx(16) * 2 - sx(12)) / 2,
-    padding: sx(10),
-    borderRadius: RADIUS,
-    backgroundColor: "#F7FAFF",
-    marginBottom: sy(14),
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
-  },
-  catThumb: { height: sy(92), borderRadius: sx(16), backgroundColor: "#D9E3F0" },
-  catTitle: {
-    marginTop: sx(10),
-    fontSize: sx(14),
-    fontWeight: "600",
-    color: "#15223B",
-    textAlign: "center",
-  },
-
-  navBar: {
+  // spinner container (kept from your previous setup)
+  spinnerBg: {
     position: "absolute",
-    left: sx(16),
-    right: sx(16),
-    bottom: sy(10),
-    paddingHorizontal: sx(16),
-    height: sy(64),
-    backgroundColor: "#fff",
-    borderRadius: sx(20),
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 5,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 0, // it's absolutely positioned; height not needed
   },
-  navItem: { width: sx(56), height: sy(56), alignItems: "center", justifyContent: "center" },
-  navIcon: { width: sx(26), height: sy(26), tintColor: "#1F2A44" },
-  homeWrap: {
-    width: sx(46),
-    height: sy(40),
-    borderRadius: sx(10),
-    borderWidth: 3,
-    borderColor: "#2F8CFF",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(47,140,255,0.08)",
-  },
-  homeIcon: { width: sx(24), height: sy(24), tintColor: "#2F8CFF" },
-
-  toggleV2: {
-    flexDirection: "row",
-    backgroundColor: "rgba(234,242,254,0.9)",
-    padding: sx(3),
-    borderRadius: sx(12),
-  },
-  toggleChip: {
-    paddingVertical: sy(6),
-    paddingHorizontal: sx(12),
-    borderRadius: sx(9),
-  },
-  toggleChipActive: {
-    backgroundColor: "#fff",
-    shadowColor: "#3B82F6",
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
-  },
-  toggleChipTxt: { fontSize: sx(12.5), color: "#475569" },
-  toggleChipTxtActive: { color: "#0B63D8", fontWeight: "700" },
 });

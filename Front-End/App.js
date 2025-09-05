@@ -14,10 +14,11 @@ import Phone from './src/screens/SignUp/Phone';
 import Extra from './src/screens/SignUp/Extra';
 import Login from './src/screens/Login';
 import Verification from './src/screens/Verification';
+import ForgetPassword from './src/screens/SignUp/ForgetPassword';
 import Home from './src/screens/Home';
-import ForgotPassword from './src/screens/ForgetPassword';
-import profile from "./src/screens/profile";
-
+import Profile from "./src/screens/Profile"; // your figma-style screen
+import Menu from './src/screens/Menu';
+import Notifications from './src/screens/Notifications';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -44,10 +45,11 @@ export default function App() {
           <Stack.Screen name="Extra" component={Extra} />
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Verification" component={Verification} />
+          <Stack.Screen name="ForgetPassword" component={ForgetPassword} />
           <Stack.Screen name="Home" component={Home} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-            <Stack.Screen name="Profile" component={profile} />
-
+          <Stack.Screen name="Profile" component={Profile} />
+          <Stack.Screen name="Menu" component={Menu}/>
+          <Stack.Screen name="Notifications" component={Notifications} />
         </Stack.Navigator>
       </NavigationContainer>
     </I18nextProvider>

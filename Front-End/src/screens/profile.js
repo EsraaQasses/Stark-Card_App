@@ -1,258 +1,298 @@
-// /src/screens/Profile.js
+// src/screens/Profile.js
 import React, { useState } from "react";
 import {
-  View, Text, TextInput, Image, Pressable, StyleSheet, Dimensions, I18nManager
+  View,
+  Text,
+  Image,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  I18nManager,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import Screenn from "../ui/Screenn";
+import NavBar from "../ui/NavBar";
 
-const { width: W, height: H } = Dimensions.get("window");
+const COLOR = {
+  primary: "#0B63D8",
+  text: "#0E1B3B",
+  line: "#E4ECF2",
+  pill: "#D6F5FF",
+  white: "#FFFFFF",
+  danger: "#FF4E4E",
+  success: "#22C55E",
+};
+
 const BASE_W = 390, BASE_H = 844;
-const sx = (n) => (W / BASE_W) * n;
-const sy = (n) => (H / BASE_H) * n;
 
 export default function Profile({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { width: W, height: H } = useWindowDimensions();
+  const RTL = I18nManager.isRTL;
+  const sx = (n) => (W / BASE_W) * n;
+  const sy = (n) => (H / BASE_H) * n;
 
-  const [first, setFirst] = useState("First");
-  const [last, setLast]   = useState("Last");
-  const [email, setEmail] = useState("name@gmail.com");
-  const [user, setUser]   = useState("Stark");
+  // nav sizes (same as Home)
+  const NAV_HEIGHT = sy(64);
+  const NAV_BOTTOM_OFFSET = sy();
+
+  // form state
+  const [first, setFirst] = useState("");
+  const [last, setLast] = useState("");
+  const [email, setEmail] = useState("");
+  const [userName, setUserName] = useState("Stark");
   const [phone, setPhone] = useState("963999999999");
-  const [dark, setDark]   = useState(false);
+  const [dark, setDark] = useState(false);
+
+  const GAP_SM = sy(8);
+  const GAP_XS = sy(6);
+  const R = sx(18);
 
   return (
-    <Screenn useDefaultBg={false} bgColor="#FFFFFF">
-      {/* page title (light like your figma) */}
-      <Text style={[styles.title, { marginTop: insets.top + sy(6) }]}>My Profile</Text>
+    <Screenn bgColor={COLOR.white}>
+      {/* title */}
+      <View style={{ paddingTop: insets.top + sy(30), alignItems: "center" }}>
+        <Text style={{ fontSize: sx(25), fontWeight: "700", color: "#0F172A" }}>My Profile</Text>
+      </View>
 
       {/* avatar */}
-      <View style={styles.avatarWrap}>
-        <View style={styles.avatarCircle}>
+      <View style={{ alignItems: "center", marginTop: sy(25), marginBottom: sy(50) }}>
+        <View
+          style={{
+            width: sx(125),
+            height: sx(125),
+            borderRadius: sx(60),
+            borderWidth: sx(4),
+            borderColor: COLOR.primary,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#F2F7FF",
+          }}
+        >
           <Image
             source={require("../assets/icons/user.png")}
-            style={{ width: sx(60), height: sx(60), tintColor: "#3B82F6" }}
             resizeMode="contain"
+            style={{ width: sx(75), height: sx(75), tintColor: COLOR.primary }}
           />
         </View>
       </View>
 
       {/* form */}
-      <View style={styles.form}>
-        <Row>
-          <LabeledInput
+      <View style={{ paddingHorizontal: sx(20), paddingBottom: sy(110) /* keep clear of navbar */ }}>
+        {/* First + Last (half width each) */}
+        <View
+          style={{
+            flexDirection: RTL ? "row-reverse" : "row",
+            justifyContent: "space-between",
+            marginBottom: GAP_SM,
+          }}
+        >
+          <Field
             label="First Name"
             value={first}
             onChangeText={setFirst}
             placeholder="First"
+            sx={sx}
+            sy={sy}
+            pillStyle={{ borderRadius: R }}
+            containerStyle={{ width: "48.5%" }}
           />
-          <LabeledInput
+          <Field
             label="Last Name"
             value={last}
             onChangeText={setLast}
             placeholder="Last"
+            sx={sx}
+            sy={sy}
+            pillStyle={{ borderRadius: R }}
+            containerStyle={{ width: "48.5%" }}
           />
-        </Row>
+        </View>
 
-        <LabeledInput
+        <Field
           label="Email"
           value={email}
           onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
           placeholder="name@gmail.com"
+          keyboardType="email-address"
+          sx={sx}
+          sy={sy}
+          showPen
+          containerStyle={{ marginBottom: GAP_SM }}
+          pillStyle={{ borderRadius: R }}
         />
 
-        <LabeledInput
+        <Field
           label="User Name"
-          value={user}
-          onChangeText={setUser}
-          autoCapitalize="none"
+          value={userName}
+          onChangeText={setUserName}
           placeholder="Stark"
+          sx={sx}
+          sy={sy}
+          showPen
+          containerStyle={{ marginBottom: GAP_SM }}
+          pillStyle={{ borderRadius: R }}
         />
 
-        <LabeledInput
+        <Field
           label="Phone"
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
-          placeholder="963999999999"
+          sx={sx}
+          sy={sy}
+          showPen
+          containerStyle={{ marginBottom: GAP_XS }}
+          pillStyle={{ borderRadius: R }}
         />
 
-        {/* Dark Mode toggle (figma-like pill with red X) */}
-        <View style={styles.toggleRow}>
-          <Text style={styles.toggleLabel}>Dark Mode</Text>
-          <Pressable
-            onPress={() => setDark(!dark)}
-            style={[
-              styles.darkToggle,
-              dark ? styles.darkToggleOn : styles.darkToggleOff,
-            ]}
-          >
-            <View style={[styles.knob, dark ? styles.knobOn : styles.knobOff]}>
-              {/* X icon when off / dot when on */}
-              <Text style={{ fontSize: sx(12), color: dark ? "#fff" : "#fff" }}>
-                {dark ? "●" : "✕"}
-              </Text>
-            </View>
-          </Pressable>
+        {/* Dark Mode */}
+        <View
+          style={{
+            marginTop: GAP_XS,
+            marginBottom: sy(12),
+            flexDirection: RTL ? "row-reverse" : "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text style={{ fontSize: sx(14), color: "#000" }}>Dark Mode</Text>
+          <Toggle
+            active={dark}
+            onPress={() => setDark((v) => !v)}
+            sx={sx}
+            sy={sy}
+            onColor={COLOR.success}
+            offColor={COLOR.danger}
+          />
         </View>
 
         {/* Save */}
-        <Pressable style={styles.saveBtn} onPress={() => { /* TODO: save to API */ }}>
-          <Text style={styles.saveTxt}>Save</Text>
+        <Pressable
+          onPress={() => {}}
+          style={{
+            alignSelf: "center",
+            height: sy(48),
+            minWidth: sx(178),
+            borderRadius: sx(18),
+            backgroundColor: "#3A86FF",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: sy(12),
+          }}
+        >
+          <Text style={{ color: COLOR.white, fontSize: sx(18), fontWeight: "700" }}>Save</Text>
         </Pressable>
       </View>
 
-      {/* simple bottom bar (same icons order as figma) */}
-      <View style={[styles.navBar, { paddingBottom: insets.bottom }]}>
-        <NavIcon
-          src={require("../assets/icons/menu.png")}
-          onPress={() => navigation.navigate("Menu")}
-        />
-        <NavIcon src={require("../assets/icons/downloads.png")} />
-        <NavIcon src={require("../assets/icons/qr.png")} />
-        <NavIcon src={require("../assets/icons/send.png")} />
-        <Pressable style={styles.homeWrap} onPress={() => navigation.navigate("Home")}>
-          <Image source={require("../assets/icons/home.png")} style={styles.homeIcon} />
-        </Pressable>
-      </View>
+      {/* white cover behind navbar (same as Home) */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: insets.bottom + NAV_HEIGHT + NAV_BOTTOM_OFFSET + sy(6),
+          backgroundColor: COLOR.white,
+          zIndex: 5, // NavBar has higher zIndex
+        }}
+      />
+
+      {/* shared NavBar — menu highlighted */}
+      <NavBar
+        active="menu"
+        insetBottom={insets.bottom + NAV_BOTTOM_OFFSET}
+        onPressHome={() => navigation.navigate("Home")}
+        onPressMenu={() => {}}
+        onPressDownloads={() => navigation.navigate("Downloads")}
+        onPressQR={() => navigation.navigate("QR")}
+        onPressSend={() => navigation.navigate("Send")}
+      />
     </Screenn>
   );
 }
 
-/* ------- small subcomponents ------- */
-
-function Row({ children }) {
-  return <View style={styles.row}>{children}</View>;
-}
-
-function LabeledInput({ label, placeholder, ...rest }) {
+/* ---------- subcomponents ---------- */
+function Field({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType = "default",
+  showPen = true,
+  containerStyle,
+  pillStyle,
+  sx,
+  sy,
+}) {
+  const RTL = I18nManager.isRTL;
   return (
-    <View style={styles.fieldBlock}>
-      <Text style={styles.label}>{label}</Text>
-      <BlurView intensity={30} tint="light" style={styles.inputWrap}>
+    <View style={[{ width: "100%" }, containerStyle]}>
+      <Text style={{ fontSize: sx(12.5), color: "#000", marginBottom: sy(4) }}>{label}</Text>
+      <View
+        style={[
+          {
+            height: sy(46),
+            backgroundColor: COLOR.pill,
+            borderWidth: 1,
+            borderColor: COLOR.line,
+            flexDirection: RTL ? "row-reverse" : "row",
+            alignItems: "center",
+            paddingHorizontal: sx(14),
+          },
+          pillStyle,
+        ]}
+      >
         <TextInput
+          value={value}
+          onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#9CC4D6"
-          style={styles.input}
-          {...rest}
+          placeholderTextColor="rgba(0,0,0,0.5)"
+          keyboardType={keyboardType}
+          style={{ flex: 1, fontSize: sx(16), color: COLOR.text, textAlign: RTL ? "right" : "left" }}
         />
-        <Image
-          source={require("../assets/icons/user.png")} // provide this icon
-          style={styles.editIcon}
-          resizeMode="contain"
-        />
-      </BlurView>
+        {showPen && (
+          <Pressable style={{ width: sx(24), height: sx(24), alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: COLOR.primary, fontSize: sx(14), fontWeight: "700" }}>✎</Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
 
-function NavIcon({ src, onPress }) {
+function Toggle({ active, onPress, sx, sy, onColor, offColor }) {
   return (
-    <Pressable style={styles.navItem} onPress={onPress}>
-      <Image source={src} style={styles.navIcon} />
+    <Pressable
+      onPress={onPress}
+      style={{
+        width: sx(50),
+        height: sy(25),
+        borderRadius: sy(14),
+        padding: sy(3),
+        backgroundColor: active ? onColor : offColor,
+        justifyContent: "center",
+      }}
+    >
+      <View
+        style={{
+          width: sy(20),
+          height: sy(20),
+          borderRadius: sy(11),
+          backgroundColor: "#fff",
+          alignSelf: active ? "flex-end" : "flex-start",
+          shadowColor: "#000",
+          shadowOpacity: 0.15,
+          shadowRadius: 3,
+          shadowOffset: { width: 0, height: 1 },
+          elevation: 2,
+        }}
+      />
     </Pressable>
   );
 }
 
-/* ------- styles ------- */
-const styles = StyleSheet.create({
-  title: {
-    fontSize: sx(18),
-    color: "rgba(0,0,0,0.18)",
-    marginLeft: sx(16),
-  },
-
-  avatarWrap: { alignItems: "center", marginTop: sy(24) },
-  avatarCircle: {
-    width: sx(110), height: sx(110), borderRadius: sx(55),
-    borderWidth: 4, borderColor: "#3B82F6",
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: "#F4F9FF",
-  },
-
-  form: { paddingHorizontal: sx(16), marginTop: sy(20) },
-
-  row: {
-    flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
-    gap: sx(12),
-  },
-
-  fieldBlock: { flex: 1, marginTop: sy(14) },
-  label: { fontSize: sx(12), color: "#666", marginBottom: sy(6) },
-
-  inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: sy(44),
-    borderRadius: sy(22),
-    paddingLeft: sx(14), paddingRight: sx(10),
-    overflow: "hidden",
-    backgroundColor: "rgba(214,245,255,0.7)",
-    borderColor: "rgba(0,0,0,0.06)",
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  input: {
-    flex: 1,
-    fontSize: sx(14),
-    color: "#0B2135",
-  },
-  editIcon: { width: sx(16), height: sx(16), opacity: 0.7 },
-
-  toggleRow: {
-    marginTop: sy(16),
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  toggleLabel: { fontSize: sx(13), color: "#333" },
-
-  darkToggle: {
-    width: sx(56), height: sy(28), borderRadius: sy(14),
-    padding: 2, flexDirection: "row", alignItems: "center",
-  },
-  darkToggleOff: { backgroundColor: "#FF6B6B" }, // red with X
-  darkToggleOn:  { backgroundColor: "#2E7CF6", justifyContent: "flex-end" },
-  knob: {
-    width: sy(24), height: sy(24), borderRadius: sy(12),
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-  knobOn:  {},
-  knobOff: {},
-
-  saveBtn: {
-    marginTop: sy(18),
-    alignSelf: "center",
-    width: sx(180),
-    height: sy(44),
-    borderRadius: sy(22),
-    backgroundColor: "#2E7CF6",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
-  },
-  saveTxt: { color: "#fff", fontWeight: "700", fontSize: sx(16) },
-
-  /* bottom nav (matches your style) */
-  navBar: {
-    position: "absolute",
-    left: sx(16), right: sx(16), bottom: sy(10),
-    height: sy(64), borderRadius: sx(20), backgroundColor: "#fff",
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: sx(16),
-    shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 18, shadowOffset: { width: 0, height: 10 },
-  },
-  navItem: { width: sx(56), height: sy(56), alignItems: "center", justifyContent: "center" },
-  navIcon: { width: sx(26), height: sx(26), tintColor: "#1F2A44" },
-  homeWrap: {
-    width: sx(46), height: sy(40), borderRadius: sx(10),
-    borderWidth: 3, borderColor: "#2F8CFF",
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(47,140,255,0.08)",
-  },
-  homeIcon: { width: sx(24), height: sx(24), tintColor: "#2F8CFF" },
-});
+/* ---------- styles ---------- */
+const styles = StyleSheet.create({});

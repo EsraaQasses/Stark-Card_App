@@ -1,9 +1,9 @@
 // src/screens/ForgotPassword.js
 import React, { useState } from "react";
 import { View, Image, Text, TextInput, StyleSheet, Alert } from "react-native";
-import Screen from "../ui/Screen";
-import Button from "../ui/Button";
-import theme from "../ui/Theme";
+import Screen from "../../ui/Screen";
+import Button from "../../ui/Button";
+import theme from "../../ui/Theme";
 
 export default function ForgetPassword({ navigation }) {
   const [email, setEmail] = useState("");
@@ -16,7 +16,7 @@ export default function ForgetPassword({ navigation }) {
       {/* Header / Logo */}
       <View style={styles.header}>
         <Image
-          source={require("../assets/Logo.png")}
+          source={require("../../assets/Logo.png")}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -40,7 +40,7 @@ export default function ForgetPassword({ navigation }) {
         <Button
           title="Send Code"
           width={143}
-          onPress={() => {
+          height={55}          onPress={() => {
             // TODO: call your API to send reset code to email
             // e.g. await api.auth.sendResetCode({ email })
             Alert.alert("Check your inbox", "We’ve sent you a verification code.");
