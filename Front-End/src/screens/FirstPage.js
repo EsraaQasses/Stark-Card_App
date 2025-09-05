@@ -1,116 +1,43 @@
-// /src/screens/FirstPage.js
-import React, { useEffect } from "react";
-import {
-  SafeAreaView,
-  View,
-  ImageBackground,
-  Image,
-  Text,
-  StyleSheet,
-  StatusBar,
-  Platform,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+// src/screens/FirstPage.js
+import React, { useEffect, useRef } from "react";
+import { View, Image, Text, StyleSheet, Pressable } from "react-native";
+import Screen from "../ui/Screen";
+import theme from "../ui/Theme";
+import { sx, sy, sp } from "../ui/scale";
 
 export default function FirstPage({ navigation }) {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.replace("SignUp"); // navigate after 5s
-    }, 5000);
+  const fired = useRef(false);
+  const timerRef = useRef(null);
 
-    return () => clearTimeout(timer); // cleanup
-  }, [navigation]);
+  const go = () => {
+    if (fired.current) return;
+    fired.current = true;
+    navigation.replace("SignUp");
+  };
+
+  useEffect(() => {
+    timerRef.current = setTimeout(go, 3000);
+    return () => timerRef.current && clearTimeout(timerRef.current);
+  }, []);
 
   return (
-    <ImageBackground
-      source={require("../assets/bg.png")} // background image
-      style={styles.bg}
-      resizeMode="cover"
-    >
-      <StatusBar barStyle="light-content" />
-      <SafeAreaView style={styles.safe}>
-        {/* Cyan glow */}
-        <LinearGradient
-          colors={["rgba(0,200,255,0.0)", "rgba(0,200,255,0.35)", "rgba(0,200,255,0.0)"]}
-          start={{ x: 0.2, y: 0.5 }}
-          end={{ x: 0.9, y: 0.5 }}
-          style={styles.cyanGlow}
-        />
-
-        {/* Dark vignette edges */}
-        <LinearGradient
-          colors={[
-            "rgba(0,0,0,0.40)",
-            "rgba(0,0,0,0.15)",
-            "rgba(0,0,0,0.00)",
-            "rgba(0,0,0,0.15)",
-            "rgba(0,0,0,0.40)",
-          ]}
-          locations={[0, 0.18, 0.5, 0.82, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-
-        {/* Glossy diagonal highlight */}
-        <LinearGradient
-          colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0.06)", "transparent"]}
-          locations={[0, 0.55, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gloss}
-          pointerEvents="none"
-        />
-
-        {/* Main content */}
-        <View style={styles.content}>
-          {/* Centered Logo */}
-          <Image
-            source={require("../assets/Logo.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          {/* Footer */}
-          <Text style={styles.copyright}>©2025 STARK-CARD</Text>
-
+    <Screen>
+      <Pressable style={styles.flex} onPress={go}>
+        <View style={styles.center}>
+          <Image source={require("../assets/Logo.png")} style={styles.logo} resizeMode="contain" />
         </View>
-      </SafeAreaView>
-    </ImageBackground>
+
+        <Text style={styles.tap}>Tap to skip</Text>
+        <Text style={styles.footer}>©2025 STARK-CARD</Text>
+      </Pressable>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  bg: {
-    flex: 1,
-    backgroundColor: "#06122A",
-    borderRadius: 1,
-    overflow: "hidden",
-  },
-  safe: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center", // centers vertically
-    alignItems: "center", // centers horizontally
-    paddingBottom: Platform.select({ ios: 24, android: 20 }),
-  },
-  logo: {
-    width: 350,
-    height: 900,
-    marginBottom: 30, // push it slightly above footer
-  },
-  copyright: {
-  position: "absolute",
-  bottom: 40,
-  left: 0,
-  right: 0,              
-  textAlign: "center",   
-  color: "#E6F0FF",
-  fontSize: 9,
-  letterSpacing: 0.4,
-  opacity: 0.80,
-},
-
+  flex: { flex: 1 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  logo: { width: sx(380), height: sy(331) },
+  tap: { textAlign: "center", color: "rgba(255,255,255,0.7)", marginBottom: sy(8), fontSize: sp(12) },
+  footer: { textAlign: "center", color: theme.colors.textPrimary, opacity: 0.8, fontSize: theme.typography.footer.fontSize },
 });

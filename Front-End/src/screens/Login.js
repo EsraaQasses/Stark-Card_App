@@ -1,157 +1,150 @@
+// src/screens/Login.js
 import React, { useState } from "react";
-import {
-  SafeAreaView,
-  View,
-  ImageBackground,
-  Image,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import TextField from "../ui/TextField";
+import { View, Image, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import Screen from "../ui/Screen";
+import Button from "../ui/Button";
+import theme from "../ui/Theme";
+import { sx, sy, sp } from "../ui/scale";
 
 export default function Login({ navigation }) {
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
-  const [secure, setSecure] = useState(true);
+  const [show, setShow] = useState(false);
 
-  const onLogin = () => {
-    // TODO: call your auth API
-    navigation.navigate("Verification", { via: "password" });
-  };
+  const canLogin = userName.trim() && password.trim();
 
   return (
-    <ImageBackground source={require("../assets/bg.png")} style={styles.bg} resizeMode="cover">
-      <StatusBar barStyle="light-content" />
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* glows */}
-        <LinearGradient
-          colors={["rgba(0,200,255,0)", "rgba(0,200,255,0.35)", "rgba(0,200,255,0)"]}
-          start={{ x: 0.2, y: 0.5 }} end={{ x: 0.9, y: 0.5 }}
-          style={styles.cyanGlow} pointerEvents="none"
+    <Screen>
+      {/* Header / Logo */}
+      <View style={styles.header}>
+        <Image
+          source={require("../assets/Logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
         />
-        <LinearGradient
-          colors={["rgba(255,255,255,0.25)", "rgba(255,255,255,0)"]}
-          start={{ x: 0.1, y: 0.1 }} end={{ x: 0.6, y: 0.6 }}
-          style={styles.cornerBloom} pointerEvents="none"
+      </View>
+
+      {/* Form */}
+      <View style={styles.form}>
+        <Text style={styles.label}>User Name</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Your Name"
+          placeholderTextColor="rgba(0,0,0,0.5)"
+          value={userName}
+          onChangeText={setUserName}
         />
 
-        {/* Logo */}
-        <View style={styles.header}>
-          <Image source={require("../assets/Logo.png")} style={styles.logo} />
-
-        </View>
-
-        {/* Form */}
-        <View style={styles.form}>
-          <Text style={styles.label}>User Name</Text>
-          <TextField
-            noLabel
-            placeholder="Enter Your Name"
-            autoCapitalize="none"
-            value={userName}
-            onChangeText={setUserName}
-          />
-
-          <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
-          <View>
-            <TextField
-              noLabel
+        <View style={{ marginTop: sy(12) }}>
+          <Text style={styles.label}>Password</Text>
+          <View style={{ position: "relative" }}>
+            <TextInput
+              style={styles.input}
               placeholder="Enter Your Password"
-              secureTextEntry={secure}
+              placeholderTextColor="rgba(0,0,0,0.5)"
+              secureTextEntry={!show}
               value={password}
               onChangeText={setPassword}
             />
-            <TouchableOpacity style={styles.eye} onPress={() => setSecure((s) => !s)}>
-              <Ionicons name={secure ? "eye-off" : "eye"} size={20} color="#001433" />
+            <TouchableOpacity
+              style={styles.eye}
+              onPress={() => setShow((s) => !s)}
+              hitSlop={{ top: sy(8), bottom: sy(8), left: sx(8), right: sx(8) }}
+            >
+              <Text style={styles.eyeText}>{show ? "🙈" : "👁️"}</Text>
             </TouchableOpacity>
           </View>
-
-          <TouchableOpacity style={{ alignSelf: "flex-end", marginTop: 8 }}>
+          <TouchableOpacity onPress={() => navigation.navigate("ForgetPassword")}>
             <Text style={styles.forgot}>Forget Password</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Login button (absolute, centered) */}
-        <TouchableOpacity activeOpacity={0.9} onPress={onLogin} style={styles.ctaWrap}>
-          <LinearGradient
-            colors={["#092D67", "rgba(9,45,103,0.10)", "#092D67"]}
-            start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-            style={styles.ctaBg}
-          >
-            <Text style={styles.ctaText}>Login</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        <Button
+          title="Login"
+          width={sx(143)}
+          height={sy(55)}
+          onPress={() => navigation.navigate("Verification")}
+          disabled={!canLogin}
+          style={{ marginTop: sy(22), alignSelf: "center", opacity: canLogin ? 1 : 0.6 }}
+        />
+      </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <View style={styles.hr} />
-          <Text style={styles.or}>OR</Text>
-          <View style={styles.hr} />
-        </View>
-        <TouchableOpacity onPress={() => navigation.navigate("SignUpEmail")} style={{ alignSelf: "center" }}>
-          <Text style={styles.footerLink}>Register</Text>
-        </TouchableOpacity>
+      {/* OR divider */}
+      <View style={styles.orBlock}>
+        <View style={styles.line} />
+        <Text style={styles.orText}>OR</Text>
+        <View style={styles.line} />
+      </View>
 
-        <Text style={styles.copyright}>©2025 STARK-CARD</Text>
-      </SafeAreaView>
-    </ImageBackground>
+      {/* Register link */}
+      <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+        <Text style={styles.register}>Register</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.footer}>©2025 STARK-CARD</Text>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  bg: { flex: 1, backgroundColor: "#06122A", borderRadius: 1, overflow: "hidden" },
-  cyanGlow: { position: "absolute", left: -40, right: -40, top: "35%", height: 140, opacity: 0.6 },
-  cornerBloom: { position: "absolute", left: -60, top: -40, width: 220, height: 220, borderRadius: 200 },
-  header: { alignItems: "center", paddingTop: 12 },
-  logo: {
-        width: 350,
-        height: 230,
-        marginBottom: 0,
-    }, 
-  form: { paddingHorizontal: 22, marginTop: 24 },
-  label: { color: "#fff", marginLeft: 6, marginBottom: 6, fontWeight: "700" },
-  eye: { position: "absolute", right: 18, top: 12, height: 46, justifyContent: "center" },
-  forgot: { color: "#fff", fontWeight: "700", textDecorationLine: "underline" },
+  header: { alignItems: "center", marginTop: sy(6), marginBottom: sy(2) },
+  logo: { width: sx(370), height: sy(250) },
 
-  // CTA pill (same geometry as “Register” spec)
-  ctaWrap: {
-    position: "absolute",
-    width: 143,
-    height: 53.96,
-    alignSelf: "center",
-    bottom: 160, // visually matches the mock (sits above footer). Tweak if needed.
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 6,
+  form: { flex: 1, marginTop: sy(8) },
+
+  label: {
+    color: theme.colors.textPrimary,
+    opacity: 0.9,
+    marginBottom: sy(6),
+    fontWeight: "600",
+    fontSize: sp(14),
+    marginLeft: sx(2),
   },
-  ctaBg: { flex: 1, borderRadius: 30, justifyContent: "center", alignItems: "center" },
-  ctaText: {
-    fontFamily: "IstokWeb-Bold",
+  input: {
+    height: sy(44),
+    borderRadius: sy(25),
+    paddingHorizontal: sx(14),
+    color: "#000",
+    borderWidth: 1,
+    borderColor: "rgba(34, 9, 255, 0.35)",
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+  },
+  eye: { position: "absolute", right: sx(14), top: sy(9) },
+  eyeText: { fontSize: sp(18) },
+  forgot: {
+    color: theme.colors.textPrimary,
+    textAlign: "right",
+    marginTop: sy(6),
     fontWeight: "700",
-    fontSize: 24,
-    lineHeight: 35,
-    color: "#FFFFFF",
+    fontSize: sp(13),
   },
 
-  footer: { flexDirection: "row", alignItems: "center", gap: 10, position: "absolute", bottom: 84,right: 0, left:2.5},
-  hr: { height: 1, width: 159, backgroundColor: "rgba(255,255,255,0.7)" },
-  or: { color: "#fff", fontWeight: "700" },
-  footerLink: { color: "#ffffff", fontWeight: "700", marginTop: 1, textDecorationLine: "underline", top: 270, right: 2},
-copyright: {
-    position: "absolute",
-    bottom: 40,
-    left: 0,
-    right: 0,
+  orBlock: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: sx(8),
+    width: "100%",
+    marginBottom: sy(12),
+  },
+  line: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.5)",
+  },
+  orText: { color: theme.colors.textPrimary, fontWeight: "800", fontSize: sp(13) },
+  register: {
+    color: theme.colors.textPrimary,
+    fontWeight: "800",
     textAlign: "center",
-    color: "#E6F0FF",
-    fontSize: 9,
-    letterSpacing: 0.4,
+    marginTop: sy(4),
+    marginBottom: sy(15),
+    fontSize: sp(14),
+  },
+
+  footer: {
+    textAlign: "center",
+    color: theme.colors.textPrimary,
     opacity: 0.8,
+    fontSize: theme.typography.footer.fontSize,
   },
 });
