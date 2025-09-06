@@ -20,7 +20,9 @@
       },
       "edgeToEdgeEnabled": true
     },
-    "web": {
-    }
+    "web": {},
+    "plugins": [
+      "expo-barcode-scanner"
+    ]
   }
 }

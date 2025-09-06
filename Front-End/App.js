@@ -19,6 +19,8 @@ import Home from './src/screens/Home';
 import Profile from "./src/screens/Profile"; // your figma-style screen
 import Menu from './src/screens/Menu';
 import Notifications from './src/screens/Notifications';
+import QRScanner from "./src/screens/QRScanner"; // <-- make sure file name matches exactly
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -50,6 +52,7 @@ export default function App() {
           <Stack.Screen name="Profile" component={Profile} />
           <Stack.Screen name="Menu" component={Menu}/>
           <Stack.Screen name="Notifications" component={Notifications} />
+          <Stack.Screen name="QRScanner" component={QRScanner} />
         </Stack.Navigator>
       </NavigationContainer>
     </I18nextProvider>

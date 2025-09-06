@@ -1,44 +1,58 @@
 // src/screens/Notifications.js
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   View,
   Text,
-  Image,
   FlatList,
   Pressable,
-  StyleSheet,
-  I18nManager,
-  useWindowDimensions,
-  Platform,
-  ActionSheetIOS,
-  Animated,
-  PanResponder,
   RefreshControl,
-  Modal,
+  StyleSheet,
+  useWindowDimensions,
+  I18nManager,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Screenn from "../ui/Screenn";
-import NavBar from "../ui/NavBar";
-
-const COLOR = {
-  white: "#FFFFFF",
-  text: "#0E1B3B",
-  muted: "#7C8DA6",
-  line: "rgba(0,0,0,0.13)",
-  titleBg: "#D6F5FF",
-  chipBg: "#C8CEFB",
-  blue: "#2F8CFF",
-  danger: "#EF4444",
-  success: "#10B981",
-};
 
 const BASE_W = 390, BASE_H = 844;
 
-const SEED = [
-  { id: "1", title: "Payment Received", details: "You received 50 USD.", date: "12:30", unread: true },
-  { id: "2", title: "Bill Reminder",   details: "Electricity due tomorrow.", date: "09:15", unread: true },
-  { id: "3", title: "Wallet Update",    details: "Balance increased by 100.", date: "Yesterday", unread: false },
-  { id: "4", title: "Promo",            details: "New offer available.", date: "Mon", unread: false },
+const COLOR = {
+  bg: "#FFFFFF",
+  card: "#F7F8FA",
+  text: "#0E1B3B",
+  sub: "#5C6B8A",
+  blue: "#0B63D8",
+  blueSoft: "#E6EFFD",
+  danger: "#E94560",
+  border: "#E9EDF4",
+  chip: "#EEF2F8",
+  unreadDot: "#2BD576",
+  shadow: "rgba(14,27,59,0.06)",
+};
+
+const INITIAL = [
+  {
+    id: "n1",
+    title: "Payment received",
+    body: "You got $120 from Ahmad for order #3912.",
+    ts: Date.now() - 1000 * 60 * 8,
+    type: "system",
+    read: false,
+  },
+  {
+    id: "n2",
+    title: "Order packed",
+    body: "Order #3913 is ready for shipment.",
+    ts: Date.now() - 1000 * 60 * 60 * 3,
+    type: "general",
+    read: false,
+  },
+  {
+    id: "n3",
+    title: "Update available",
+    body: "Version 1.2.4 is ready. Tap to learn what’s new.",
+    ts: Date.now() - 1000 * 60 * 60 * 26,
+    type: "system",
+    read: true,
+  },
 ];
 
 export default function Notifications({ navigation }) {
@@ -48,412 +62,234 @@ export default function Notifications({ navigation }) {
   const sy = (n) => (H / BASE_H) * n;
   const RTL = I18nManager.isRTL;
 
-  const NAV_HEIGHT = sy(64);
-  const NAV_BOTTOM_OFFSET = sy();
-
-  const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState(
-    SEED.map((x) => ({ ...x, _expanded: false }))
-  );
-  const [tab, setTab] = useState("all"); // "all" | "unread"
-
-  const unreadCount = useMemo(() => items.filter((x) => x.unread).length, [items]);
+  const [items, setItems] = useState(INITIAL);
+  const [filter, setFilter] = useState("all");
+  const [refreshing, setRefreshing] = useState(false);
 
   const filtered = useMemo(() => {
-    if (tab === "unread") return items.filter((x) => x.unread);
-    return items;
-  }, [items, tab]);
-
-  const onRefresh = async () => {
-    setLoading(true);
-    // TODO: replace with your backend call
-    setTimeout(() => setLoading(false), 600);
-  };
-
-  const markAllRead = () =>
-    setItems((arr) => arr.map((x) => ({ ...x, unread: false })));
-
-  const deleteAllRead = () =>
-    setItems((arr) => arr.filter((x) => x.unread));
-
-  const openRowMenu = (item) => {
-    const options = ["Cancel", item.unread ? "Mark as read" : "Mark as unread", "Delete"];
-    const cb = (idx) => {
-      if (idx === 1) toggleRead(item.id);
-      if (idx === 2) removeItem(item.id);
-    };
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        { options, cancelButtonIndex: 0, destructiveButtonIndex: 2, userInterfaceStyle: "light" },
-        cb
-      );
-    } else {
-      // simple Android fallback: small modal with the two actions
-      setSheet({ type: "row", item });
+    switch (filter) {
+      case "unread": return items.filter((x) => !x.read);
+      case "system": return items.filter((x) => x.type === "system");
+      default: return items;
     }
-  };
+  }, [items, filter]);
 
-  const [sheet, setSheet] = useState(null); // { type: "row" | null, item }
-
-  const toggleExpand = (id) =>
-    setItems((arr) => arr.map((x) => (x.id === id ? { ...x, _expanded: !x._expanded } : x)));
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setItems((prev) => [
+        {
+          id: "n" + (prev.length + 1),
+          title: "Welcome 👋",
+          body: "Thanks for checking notifications!",
+          ts: Date.now(),
+          type: "general",
+          read: false,
+        },
+        ...prev,
+      ]);
+      setRefreshing(false);
+    }, 900);
+  }, []);
 
   const toggleRead = (id) =>
-    setItems((arr) => arr.map((x) => (x.id === id ? { ...x, unread: !x.unread } : x)));
+    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n)));
 
   const removeItem = (id) =>
-    setItems((arr) => arr.filter((x) => x.id !== id));
+    setItems((prev) => prev.filter((n) => n.id !== id));
+
+  const markAllRead = () =>
+    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+
+  const timeAgo = (ts) => {
+    const diff = Math.max(1, Math.floor((Date.now() - ts) / 1000));
+    if (diff < 60) return `${diff}s`;
+    const m = Math.floor(diff / 60);
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    const d = Math.floor(h / 24);
+    return `${d}d`;
+  };
+
+  const labelFromType = (t) => (t === "system" ? "System" : "General");
 
   const renderItem = ({ item }) => (
-    <SwipeableRow
-      sx={sx}
-      sy={sy}
-      RTL={RTL}
-      onRead={() => toggleRead(item.id)}
-      onDelete={() => removeItem(item.id)}
+    <Pressable
+      onPress={() => toggleRead(item.id)}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.title}, ${item.read ? "read" : "unread"}`}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          flexDirection: RTL ? "row-reverse" : "row",
+          opacity: pressed ? 0.85 : 1,
+          backgroundColor: item.read ? COLOR.card : COLOR.blueSoft,
+          borderColor: item.read ? COLOR.border : COLOR.blue,
+        },
+      ]}
     >
-      <Pressable
-        onPress={() => toggleExpand(item.id)}
-        onLongPress={() => openRowMenu(item)}
-        android_ripple={{ color: "rgba(0,0,0,0.05)" }}
-        style={{ paddingVertical: sy(8) }}
-      >
-        <Row sx={sx} sy={sy} RTL={RTL} data={item} />
-      </Pressable>
+      {/* Left: unread dot / bell */}
+      <View style={[styles.left, { marginStart: RTL ? 0 : sx(12), marginEnd: RTL ? sx(12) : 0 }]}>
+        {item.read ? (
+          <Text style={{ fontSize: sx(20), color: COLOR.blue }} accessibilityElementsHidden>
+            🔔
+          </Text>
+        ) : (
+          <View style={styles.dot} />
+        )}
+      </View>
 
-      {/* divider (thin line like Arrow 13/15/17/19) */}
-      <View
-        style={{
-          marginTop: sy(10),
-          height: 0,
-          borderBottomWidth: 2,
-          borderBottomColor: COLOR.line,
-          width: "96%",
-          alignSelf: RTL ? "flex-end" : "flex-start",
-        }}
-      />
-    </SwipeableRow>
+      {/* Body */}
+      <View style={{ flex: 1, gap: sy(4) }}>
+        <Text numberOfLines={1} style={styles.title}>{item.title}</Text>
+        <Text numberOfLines={2} style={styles.body}>{item.body}</Text>
+        <View style={[styles.metaRow, { flexDirection: RTL ? "row-reverse" : "row" }]}>
+          <View style={[styles.badge, item.type === "system" ? styles.badgeSystem : styles.badgeGeneral]}>
+            <Text style={styles.badgeText}>{labelFromType(item.type)}</Text>
+          </View>
+          <Text style={styles.time}>{timeAgo(item.ts)}</Text>
+        </View>
+      </View>
+
+      {/* Actions */}
+      <View style={[styles.actions, { alignItems: RTL ? "flex-start" : "flex-end" }]}>
+        <Pressable onPress={() => toggleRead(item.id)} hitSlop={10}>
+          <Text style={[styles.link, { color: item.read ? COLOR.blue : COLOR.text }]}>
+            {item.read ? "Mark unread" : "Mark read"}
+          </Text>
+        </Pressable>
+        <Pressable onPress={() => removeItem(item.id)} hitSlop={10} style={{ marginTop: sy(6) }}>
+          <Text style={[styles.link, { color: COLOR.danger }]}>Delete</Text>
+        </Pressable>
+      </View>
+    </Pressable>
   );
 
   return (
-    <Screenn bgColor={COLOR.white}>
-      <View style={{ flex: 1, paddingTop: insets.top + sy(10) }}>
-        {/* Title pill (Rectangle 23) with actions */}
-        <View
-          style={{
-            marginTop: sy(10),
-            marginHorizontal: sx(18),
-            height: sy(71),
-            backgroundColor: COLOR.titleBg,
-            borderRadius: sx(30),
-            flexDirection: RTL ? "row-reverse" : "row",
-            alignItems: "center",
-            paddingHorizontal: sx(16),
-          }}
-        >
-          <Text style={{ flex: 1, textAlign: "center", fontSize: sx(26), fontWeight: "600", color: COLOR.text }}>
-            Notifications
-          </Text>
-
-          {/* Blue bell with badge + mark-all button behavior */}
-          <Pressable
-            onPress={markAllRead}
-            hitSlop={10}
-            style={{ width: sx(46), height: sx(46), borderRadius: sx(23), alignItems: "center", justifyContent: "center" }}
-          >
-            <Image
-              source={require("../assets/icons/bell.png")}
-              style={{ width: sx(22), height: sx(22), tintColor: COLOR.blue }}
-              resizeMode="contain"
-            />
-            {unreadCount > 0 && (
-              <View
-                style={{
-                  position: "absolute",
-                  top: sy(6),
-                  right: RTL ? undefined : sx(6),
-                  left: RTL ? sx(6) : undefined,
-                  minWidth: sx(18),
-                  height: sx(18),
-                  borderRadius: sx(9),
-                  paddingHorizontal: sx(4),
-                  backgroundColor: "#E11D48",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ color: "#fff", fontSize: sx(10), fontWeight: "700" }}>{unreadCount}</Text>
-              </View>
-            )}
-          </Pressable>
+    <View style={[styles.screen, { paddingTop: insets.top + sy(6) }]}>
+      {/* Header */}
+      <View style={[styles.header, { flexDirection: RTL ? "row-reverse" : "row" }]}>
+        <Text style={styles.headerTitle}>Notifications</Text>
+        <View style={{ flex: 1 }} />
+        <View style={styles.bellWrap} accessible accessibilityLabel="Notifications">
+          <Text style={styles.bell}>🔔</Text>
         </View>
+      </View>
 
-        {/* Filter chips (Read / Unread) with counts */}
-        <View
-          style={{
-            flexDirection: RTL ? "row-reverse" : "row",
-            gap: sx(12),
-            marginTop: sy(12),
-            paddingHorizontal: sx(40),
-          }}
-        >
-          <Chip
-            label={`All (${items.length})`}
-            active={tab === "all"}
-            onPress={() => setTab("all")}
-            sx={sx}
-          />
-          <Chip
-            label={`Unread (${unreadCount})`}
-            active={tab === "unread"}
-            onPress={() => setTab("unread")}
-            sx={sx}
-          />
-          {/* quick clean-up for read items */}
-          <Pressable
-            onPress={deleteAllRead}
-            style={{
-              marginStart: "auto",
-              backgroundColor: "rgba(239,68,68,0.08)",
-              borderWidth: 1,
-              borderColor: "rgba(239,68,68,0.25)",
-              borderRadius: sx(50),
-              paddingVertical: sy(6),
-              paddingHorizontal: sx(12),
-            }}
-          >
-            <Text style={{ color: COLOR.danger, fontSize: sx(12), fontWeight: "700" }}>Clear read</Text>
-          </Pressable>
-        </View>
+      {/* Quick actions row (no Mentions) */}
+      <View style={[styles.quickRow, { flexDirection: RTL ? "row-reverse" : "row" }]}>
+        <FilterChip label="All" active={filter === "all"} onPress={() => setFilter("all")} />
+        <FilterChip label="Unread" active={filter === "unread"} onPress={() => setFilter("unread")} />
+        <FilterChip label="System" active={filter === "system"} onPress={() => setFilter("system")} />
+        <View style={{ flex: 1 }} />
+        <Pressable onPress={markAllRead} hitSlop={10}>
+          <Text style={[styles.link, { color: COLOR.blue }]}>Mark all read</Text>
+        </Pressable>
+      </View>
 
-        {/* List */}
+      {/* Content */}
+      {filtered.length === 0 ? (
+        <EmptyState onReset={() => setFilter("all")} />
+      ) : (
         <FlatList
-          style={{ marginTop: sy(8) }}
-          contentContainerStyle={{ paddingHorizontal: sx(23), paddingBottom: insets.bottom + sy(110) }}
           data={filtered}
-          keyExtractor={(it) => String(it.id)}
+          keyExtractor={(x) => x.id}
+          contentContainerStyle={{ padding: sx(16), paddingBottom: insets.bottom + sy(24), gap: sy(10) }}
           renderItem={renderItem}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
-          ListEmptyComponent={
-            <View style={{ alignItems: "center", marginTop: sy(40) }}>
-              <Text style={{ color: COLOR.muted }}>
-                {tab === "unread" ? "No unread notifications" : "No notifications"}
-              </Text>
-            </View>
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLOR.blue]}
+              tintColor={COLOR.blue}
+            />
           }
         />
-      </View>
+      )}
 
-      {/* Android fallback sheet for row actions */}
-      <Modal visible={!!sheet} transparent animationType="fade" onRequestClose={() => setSheet(null)}>
-        <View style={styles.backdrop}>
-          <View style={[styles.sheet, { width: W - sx(40), borderRadius: sx(14) }]}>
-            <Pressable style={styles.sheetItem} onPress={() => setSheet(null)}>
-              <Text style={{ fontWeight: "700" }}>Cancel</Text>
-            </Pressable>
-            <View style={styles.sheetDivider} />
-            <Pressable
-              style={styles.sheetItem}
-              onPress={() => {
-                toggleRead(sheet?.item?.id);
-                setSheet(null);
-              }}
-            >
-              <Text>{sheet?.item?.unread ? "Mark as read" : "Mark as unread"}</Text>
-            </Pressable>
-            <View style={styles.sheetDivider} />
-            <Pressable
-              style={styles.sheetItem}
-              onPress={() => {
-                removeItem(sheet?.item?.id);
-                setSheet(null);
-              }}
-            >
-              <Text style={{ color: COLOR.danger }}>Delete</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-
-      {/* cover behind navbar */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          left: 0, right: 0, bottom: 0,
-          height: insets.bottom + NAV_HEIGHT + NAV_BOTTOM_OFFSET + sy(6),
-          backgroundColor: COLOR.white,
-          zIndex: 5,
-        }}
-      />
-
-      <NavBar
-        active="menu"
-        insetBottom={insets.bottom + NAV_BOTTOM_OFFSET}
-        onPressHome={() => navigation.navigate("Home")}
-        onPressMenu={() => navigation.navigate("Menu")}
-        onPressDownloads={() => navigation.navigate("Downloads")}
-        onPressQR={() => navigation.navigate("QR")}
-        onPressSend={() => navigation.navigate("Send")}
-      />
-    </Screenn>
-  );
-}
-
-/* ---------- row + interactions ---------- */
-
-function Row({ sx, sy, RTL, data }) {
-  const { title, details, date, unread, _expanded } = data;
-  return (
-    <View>
-      <View style={{ flexDirection: RTL ? "row-reverse" : "row", alignItems: "flex-start" }}>
-        <Image
-          source={require("../assets/icons/bell.png")}
-          style={{
-            width: sx(50),
-            height: sx(50),
-            marginEnd: RTL ? 0 : sx(10),
-            marginStart: RTL ? sx(10) : 0,
-          }}
-          resizeMode="contain"
-        />
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              color: "#000",
-              fontSize: sx(18),
-              lineHeight: sx(24),
-              fontWeight: "700",
-              opacity: unread ? 1 : 0.75,
-            }}
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
-          {!_expanded && (
-            <Text style={{ color: "#111827", fontSize: sx(13), marginTop: sy(4) }} numberOfLines={1}>
-              {details}
-            </Text>
-          )}
-          {_expanded && (
-            <View
-              style={{
-                marginTop: sy(8),
-                padding: sx(10),
-                borderRadius: sx(12),
-                backgroundColor: "rgba(214,245,255,0.35)",
-              }}
-            >
-              <Text style={{ color: "#111827", fontSize: sx(14) }}>{details}</Text>
-            </View>
-          )}
-        </View>
-        <View style={{ width: sx(60), alignItems: RTL ? "flex-start" : "flex-end" }}>
-          <Text style={{ color: COLOR.muted, fontSize: sx(12) }} numberOfLines={1}>
-            {date}
-          </Text>
-          {unread && (
-            <View style={{ marginTop: sy(6), width: sx(8), height: sx(8), borderRadius: sx(4), backgroundColor: "#E11D48" }} />
-          )}
-        </View>
-      </View>
+      {/* <NavBar navigation={navigation} active="menu" /> */}
     </View>
   );
 }
 
-function Chip({ label, active, onPress, sx }) {
+function FilterChip({ label, active, onPress }) {
   return (
     <Pressable
       onPress={onPress}
-      style={{
-        paddingVertical: 8,
-        paddingHorizontal: 14,
-        borderRadius: 999,
-        backgroundColor: active ? "rgba(21,2,91,0.1)" : COLOR.chipBg,
-        borderWidth: active ? 1 : 0,
-        borderColor: "rgba(21,2,91,0.25)",
-      }}
+      style={({ pressed }) => [
+        styles.chip,
+        active && { backgroundColor: COLOR.blue, borderColor: COLOR.blue },
+        pressed && { opacity: 0.9 },
+      ]}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={label}
     >
-      <Text style={{ color: active ? "#15025B" : "#111827", fontWeight: "700", fontSize: sx(12) }}>
-        {label}
-      </Text>
+      <Text style={[styles.chipText, active && { color: "#fff" }]}>{label}</Text>
     </Pressable>
   );
 }
 
-/* Swipe-to-reveal actions (Read/Delete) without extra libs) */
-function SwipeableRow({ sx, sy, RTL, onRead, onDelete, children }) {
-  const tx = useRef(new Animated.Value(0)).current;
-  const OPEN = sx(120), THRESH = sx(40);
-
-  const pan = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 6,
-      onPanResponderMove: (_, g) => {
-        const d = RTL ? Math.max(0, Math.min(OPEN, -g.dx)) : Math.max(0, Math.min(OPEN, g.dx));
-        tx.setValue(d);
-      },
-      onPanResponderRelease: (_, g) => {
-        const d = RTL ? -g.dx : g.dx;
-        Animated.spring(tx, {
-          toValue: d > THRESH ? OPEN : 0,
-          useNativeDriver: true,
-        }).start();
-      },
-    })
-  ).current;
-
-  const close = () => Animated.spring(tx, { toValue: 0, useNativeDriver: true }).start();
-  const doRead = () => { onRead?.(); close(); };
-  const doDelete = () => {
-    Animated.timing(tx, { toValue: sx(500), duration: 200, useNativeDriver: true }).start(() => onDelete?.());
-  };
-
+function EmptyState({ onReset }) {
   return (
-    <View style={{ overflow: "hidden" }}>
-      {/* actions underlay */}
-      <View
-        style={{
-          position: "absolute",
-          top: 0, bottom: 0, left: 0, right: 0,
-          flexDirection: RTL ? "row-reverse" : "row",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          gap: sx(10),
-          paddingHorizontal: sx(8),
-        }}
-      >
-        <Pressable
-          onPress={doRead}
-          style={{ backgroundColor: COLOR.success, paddingVertical: sy(8), paddingHorizontal: sx(14), borderRadius: sx(10) }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "700" }}>Read</Text>
-        </Pressable>
-        <Pressable
-          onPress={doDelete}
-          style={{ backgroundColor: COLOR.danger, paddingVertical: sy(8), paddingHorizontal: sx(14), borderRadius: sx(10) }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "700" }}>Delete</Text>
-        </Pressable>
+    <View style={styles.empty}>
+      <View style={styles.emptyBell}>
+        <Text style={{ fontSize: 28, color: COLOR.blue }}>🔔</Text>
       </View>
-
-      {/* content overlay */}
-      <Animated.View
-        {...pan.panHandlers}
-        style={{
-          transform: [{ translateX: RTL ? Animated.multiply(tx, -1) : tx }],
-        }}
-      >
-        {children}
-      </Animated.View>
+      <Text style={styles.emptyTitle}>No notifications</Text>
+      <Text style={styles.emptySub}>You’re all caught up. New updates will appear here.</Text>
+      <Pressable onPress={onReset} style={styles.emptyBtn} hitSlop={10}>
+        <Text style={styles.emptyBtnText}>Show all</Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.25)", alignItems: "center", justifyContent: "center" },
-  sheet: { backgroundColor: "#fff", overflow: "hidden" },
-  sheetItem: { paddingVertical: 14, paddingHorizontal: 16, alignItems: "center" },
-  sheetDivider: { height: 1, backgroundColor: "#E5E7EB" },
+  screen: { flex: 1, backgroundColor: COLOR.bg },
+  header: { paddingHorizontal: 16, paddingBottom: 10, alignItems: "center" },
+  headerTitle: { fontSize: 22, fontWeight: "700", color: COLOR.text },
+  bellWrap: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: COLOR.blueSoft,
+    alignItems: "center", justifyContent: "center",
+  },
+  bell: { fontSize: 20, color: COLOR.blue },
+
+  quickRow: { paddingHorizontal: 12, paddingVertical: 8, gap: 8, alignItems: "center" },
+  chip: {
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16,
+    backgroundColor: COLOR.chip, borderWidth: 1, borderColor: COLOR.border,
+  },
+  chipText: { fontSize: 13, color: COLOR.text, fontWeight: "600" },
+
+  card: {
+    padding: 14, borderRadius: 16, backgroundColor: COLOR.card,
+    borderWidth: 1, borderColor: COLOR.border,
+    shadowColor: COLOR.shadow, shadowOpacity: 1, shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 }, elevation: 1,
+    alignItems: "flex-start", gap: 8,
+  },
+  left: { width: 24, alignItems: "center", marginTop: 2 },
+  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLOR.unreadDot },
+  title: { fontSize: 15.5, fontWeight: "700", color: COLOR.text },
+  body: { fontSize: 13.5, color: COLOR.sub },
+  metaRow: { marginTop: 4, alignItems: "center", gap: 10 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 },
+  badgeGeneral: { backgroundColor: "#F6F8FF" },
+  badgeSystem: { backgroundColor: "#F2F5FF" },
+  badgeText: { fontSize: 11, color: COLOR.sub, fontWeight: "600" },
+  time: { fontSize: 11, color: COLOR.sub },
+  actions: { gap: 6, marginStart: 10 },
+  link: { fontSize: 12.5, fontWeight: "700" },
+
+  empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
+  emptyBell: {
+    width: 72, height: 72, borderRadius: 36, backgroundColor: COLOR.blueSoft,
+    alignItems: "center", justifyContent: "center", marginBottom: 10,
+  },
+  emptyTitle: { fontSize: 18, fontWeight: "800", color: COLOR.text },
+  emptySub: { fontSize: 13.5, color: COLOR.sub, textAlign: "center", marginTop: 6 },
+  emptyBtn: { marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, backgroundColor: COLOR.blue },
+  emptyBtnText: { color: "#fff", fontWeight: "700" },
 });

@@ -294,7 +294,7 @@ export default function Home({ navigation }) {
         onPressHome={() => navigation.navigate("Home")}
         onPressMenu={() => navigation.navigate("Menu")}
         onPressDownloads={() => navigation.navigate("Downloads")}
-        onPressQR={() => navigation.navigate("QR")}
+        onPressQR={() => navigation.navigate("QRScanner")}
         onPressSend={() => navigation.navigate("Send")}
       />
     </Screenn>

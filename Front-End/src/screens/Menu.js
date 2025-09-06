@@ -158,17 +158,7 @@ export default function Menu({ navigation }) {
           backgroundColor: "#fff",
         }}
       />
-
-      {/* the ONLY navbar */}
-      <NavBar
-        active="menu"
-        insetBottom={insets.bottom + NAV_BOTTOM_OFFSET}
-        onPressHome={() => navigation.navigate("Home")}
-        onPressMenu={() => {}}
-        onPressDownloads={() => navigation.navigate("Downloads")}
-        onPressQR={() => navigation.navigate("QR")}
-        onPressSend={() => navigation.navigate("Send")}
-      />
+      
     </Screenn>
   );
 }
