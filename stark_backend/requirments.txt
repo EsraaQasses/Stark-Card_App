@@ -1,0 +1,7 @@
+Django>=4.2,<5.0
+djangorestframework>=3.15
+djangorestframework-simplejwt>=8.0
+psycopg2-binary>=2.9       
+Pillow>=10.0             
+django-cors-headers>=4.0  
+djangorestframework-nested>=0.1.8
