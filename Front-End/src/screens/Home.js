@@ -238,37 +238,44 @@ export default function Home({ navigation }) {
           {/* 2-column grid */}
           <View style={[styles.grid, { paddingHorizontal: sx(14), marginTop: sy(14), rowGap: sy(14) }]}>
             {SECTIONS.map((label) => (
-              <Pressable
-                key={label}
-                style={({ pressed }) => [
-                  styles.card,
-                  { width: "48.5%", borderRadius: RADIUS },
-                  pressed && { transform: [{ scale: 0.98 }], opacity: 0.95 },
-                ]}
-              >
-                <View
-                  style={{
-                    width: "100%",
-                    aspectRatio: 1,
-                    borderRadius: sx(12),
-                    backgroundColor: "#E8EFF7",
-                    borderWidth: 1,
-                    borderColor: COLOR.line,
-                  }}
-                />
-                <Text
-                  style={{
-                    marginTop: sx(10),
-                    textAlign: "center",
-                    color: COLOR.text,
-                    fontWeight: "800",
-                    fontSize: sx(16),
-                  }}
-                >
-                  {label}
-                </Text>
-              </Pressable>
-            ))}
+  <Pressable
+    key={label}
+    onPress={() =>
+      navigation.navigate("Products", {
+        sectionId: label, // use the label as the id (or your own id)
+        title: label,     // shows as the Products title
+      })
+    }
+    style={({ pressed }) => [
+      styles.card,
+      { width: "48.5%", borderRadius: RADIUS },
+      pressed && { transform: [{ scale: 0.98 }], opacity: 0.95 },
+    ]}
+  >
+    <View
+      style={{
+        width: "100%",
+        aspectRatio: 1,
+        borderRadius: sx(12),
+        backgroundColor: "#E8EFF7",
+        borderWidth: 1,
+        borderColor: COLOR.line,
+      }}
+    />
+    <Text
+      style={{
+        marginTop: sx(10),
+        textAlign: "center",
+        color: COLOR.text,
+        fontWeight: "800",
+        fontSize: sx(16),
+      }}
+    >
+      {label}
+    </Text>
+  </Pressable>
+))}
+
           </View>
         </View>
       </ScrollView>

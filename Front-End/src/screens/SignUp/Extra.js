@@ -85,6 +85,7 @@ export default function Extra({ navigation, route }) {
         </View>
 
         <Button
+          variant="auth"
           title="Register"
           width={sx(143)}
           height={sy(55)}

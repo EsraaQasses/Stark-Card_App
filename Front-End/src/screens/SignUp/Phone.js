@@ -50,6 +50,7 @@ export default function Email({ navigation }) {
         <Field label="Email" placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
 
         <Button
+          variant="auth"
           title="Continue"
           width={143}
           onPress={() => navigation.navigate("Extra", { phoneRequired: true })}

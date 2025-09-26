@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   // Popover card (rectangle)
   card: {
     backgroundColor: "#bbe4e9ff",
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: BLUE,           // subtle blue outline
     paddingVertical: 14,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
     elevation: 16,
-    margin:80
+    margin:60
   },
 
   row: {
