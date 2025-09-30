@@ -1,12 +1,12 @@
-from rest_framework import generics, permissions, status
-from rest_framework.response import Response
+from rest_framework import generics, permissions
 from users.models import User
 from wallets.models import Wallet
 from transactions.models import Transaction
-from store.models import Section, Product, PaymentMethod
+from store.models import Section, Product
+from payment_methods.models import PaymentMethod
 from .serializers import (
     DashboardUserSerializer, WalletSerializer, TransactionSerializer,
-    SectionSerializer, ProductSerializer, PaymentMethodSerializer
+    SectionSerializer, PaymentMethodSerializer
 )
 
 class DashboardUserListView(generics.ListAPIView):
@@ -27,11 +27,6 @@ class DashboardWalletListView(generics.ListAPIView):
 class DashboardSectionListCreateView(generics.ListCreateAPIView):
     queryset = Section.objects.all()
     serializer_class = SectionSerializer
-    permission_classes = [permissions.IsAdminUser]
-
-class DashboardProductListCreateView(generics.ListCreateAPIView):
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
     permission_classes = [permissions.IsAdminUser]
 
 class DashboardPaymentMethodListCreateView(generics.ListCreateAPIView):

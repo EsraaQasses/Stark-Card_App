@@ -1,8 +1,6 @@
 from rest_framework import generics, permissions
 from .models import Wallet
 from .serializers import WalletSerializer
-from rest_framework.response import Response
-from rest_framework import status
 
 class UserWalletListView(generics.ListAPIView):
     serializer_class = WalletSerializer

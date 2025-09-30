@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PackagePrice, Section, Product, PaymentMethod, RedeemCode, Package
+from .models import PackagePrice, Section, Product, RedeemCode, Package
 
 
 class SectionSerializer(serializers.ModelSerializer):
@@ -18,14 +18,6 @@ class SectionSerializer(serializers.ModelSerializer):
 
     def get_products(self, obj):
         return ProductSerializer(obj.products.all(), many=True, context=self.context).data
-
-
-class PaymentMethodSerializer(serializers.ModelSerializer):
-    api_key = serializers.CharField(write_only=True, required=False, allow_blank=True)
-
-    class Meta:
-        model = PaymentMethod
-        fields = ["id", "name", "method_type", "api_endpoint", "instructions", "api_key"]
 
 
 class PackagePriceSerializer(serializers.ModelSerializer):

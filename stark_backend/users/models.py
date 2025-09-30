@@ -2,6 +2,7 @@ from datetime import timedelta, timezone
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 from django.core.validators import RegexValidator
+from rest_framework.permissions import BasePermission
 
 class UserManager(BaseUserManager):
     def create_user(self, name, password=None, email=None, phone=None, role="user", **extra_fields):
@@ -106,3 +107,4 @@ class OTPCode(models.Model):
 
     def is_expired(self):
       return timezone.now() > self.created_at + timedelta(minutes=5)
+

@@ -2,7 +2,6 @@ from rest_framework import generics, permissions
 from .models import AgentProfile
 from .serializers import AgentProfileSerializer, AgentUserSerializer
 from users.models import User
-from rest_framework.response import Response
 
 class AgentListView(generics.ListAPIView):
     queryset = AgentProfile.objects.all()

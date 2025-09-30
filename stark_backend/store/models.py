@@ -15,23 +15,6 @@ class Section(models.Model):
         return self.name
 
 
-class PaymentMethod(models.Model):
-    METHOD_TYPES = (
-        ("manual_code", "Manual Redeem Code"),
-        ("in_game_topup", "In-Game Top-Up"),
-        ("api_provider", "API Provider"),
-    )
-
-    name = models.CharField(max_length=255)
-    method_type = models.CharField(max_length=50, choices=METHOD_TYPES)
-    api_endpoint = models.URLField(blank=True, null=True)
-    api_key = models.CharField(max_length=255, blank=True, null=True)
-    instructions = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return self.name
-
-
 class Product(models.Model):
     section = models.ForeignKey(Section, related_name="products", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)

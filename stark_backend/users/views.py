@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .serializers import UserSerializer, RegisterSerializer, VerifyOTPSerializer, LoginSerializer
+from rest_framework.permissions import BasePermission
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -68,3 +69,23 @@ class LogoutView(APIView):
             return Response({"message": "Successfully logged out"}, status=200)
         except Exception as e:
             return Response({"error": "Invalid token"}, status=400)
+        
+
+class HasRolePermission(BasePermission):
+ #يسمح بالوصول فقط للمستخدمين الذين دورهم موجود في allowed_roles.
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        allowed_roles = getattr(view, "allowed_roles", [])
+        return request.user.role in allowed_roles
+    
+
+class UserProfileView(generics.RetrieveAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [HasRolePermission]
+    allowed_roles = ["admin", "user", "agent"]  
+
+    def get_object(self):
+        return self.request.user

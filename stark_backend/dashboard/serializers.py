@@ -2,7 +2,8 @@ from rest_framework import serializers
 from users.models import User
 from wallets.models import Wallet
 from transactions.models import Transaction
-from store.models import Section, Product, ProductPrice, PaymentMethod
+from store.models import Section
+from payment_methods.models import PaymentMethod
 
 class DashboardUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,20 +26,10 @@ class SectionSerializer(serializers.ModelSerializer):
         model = Section
         fields = ["id", "name", "description", "image"]
 
-class ProductPriceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProductPrice
-        fields = ["id", "currency", "amount"]
-
 class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentMethod
         fields = ["id", "name", "method_type", "api_endpoint", "instructions"]
 
-class ProductSerializer(serializers.ModelSerializer):
-    prices = ProductPriceSerializer(many=True, read_only=True)
-    payment_method = PaymentMethodSerializer(read_only=True)
 
-    class Meta:
-        model = Product
-        fields = ["id", "name", "description", "image", "section", "payment_method", "prices"]
+
