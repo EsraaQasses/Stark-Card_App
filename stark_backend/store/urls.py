@@ -1,8 +1,18 @@
-from django.urls import path
-from .views import SectionListView, ProductListView, ProductDetailView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import (
+    SectionViewSet, ProductViewSet, PackageViewSet, PackagePriceViewSet,
+    PaymentMethodViewSet, RedeemCodeViewSet
+)
+
+router = DefaultRouter()
+router.register(r"sections", SectionViewSet, basename="section")
+router.register(r"products", ProductViewSet, basename="product")
+router.register(r"packages", PackageViewSet, basename="package")
+router.register(r"package-prices", PackagePriceViewSet, basename="packageprice")
+router.register(r"payment-methods", PaymentMethodViewSet, basename="paymentmethod")
+router.register(r"redeem-codes", RedeemCodeViewSet, basename="redeemcode")
 
 urlpatterns = [
-    path("sections/", SectionListView.as_view(), name="sections-list"),
-    path("products/", ProductListView.as_view(), name="products-list"),
-    path("products/<int:pk>/", ProductDetailView.as_view(), name="product-detail"),
+    path("", include(router.urls)),
 ]

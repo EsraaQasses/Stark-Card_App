@@ -6,7 +6,7 @@ User = settings.AUTH_USER_MODEL
 class Wallet(models.Model):
     CURRENCY_CHOICES = (
         ("usd", "US Dollar"),
-        ("lira", "Turkish Lira"),
+        ("syp", "Syrian Pound"),
     )
 
     user = models.ForeignKey(User, related_name="wallets", on_delete=models.CASCADE)
