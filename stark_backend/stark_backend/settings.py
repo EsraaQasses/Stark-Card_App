@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -22,10 +25,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-fqt-!xt=0jq=(1=co$yg@)vo&yt09^af4ne9)%8#mk6bfxd^ys'
+SECRET_KEY = os.getenv('SECRET_KEY')
+THIRD_PARTY_API_FERNET_KEY = os.getenv('THIRD_PARTY_API_FERNET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+# Validate required environment variables
+required_env_vars = ['SECRET_KEY', 'THIRD_PARTY_API_FERNET_KEY']
+missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+if missing_vars:
+    raise ValueError(f"Missing environment variables: {', '.join(missing_vars)}")
 
 ALLOWED_HOSTS = ["*"]
 
@@ -52,6 +62,7 @@ INSTALLED_APPS = [
     "agents",
     "dashboard",
     "payment_methods",
+    'third_party_apis',
 ]
 
 
@@ -176,3 +187,4 @@ CORS_ALLOWED_ORIGINS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
