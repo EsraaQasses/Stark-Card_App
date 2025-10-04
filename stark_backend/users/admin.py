@@ -11,6 +11,7 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {"fields": ("name", "email", "phone", "role", "agent", "password1", "password2")}),
     )
-    list_display = ("id", "name", "email", "phone", "role", "agent", "is_active")
+    list_display = ("id", "name", "email", "phone", "role", "agent", "is_active", "is_banned")
     search_fields = ("name", "email", "phone")
+    list_filter = ("role", "is_banned")
     ordering = ("id",)

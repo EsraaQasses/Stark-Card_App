@@ -41,6 +41,9 @@ class Transaction(models.Model):
     note = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    recipient_wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE,null=True,
+    blank=True, related_name="received_transactions")
+
 
     def __str__(self):
         return f"{self.user} - {self.transaction_type} - {self.amount} ({self.status})"

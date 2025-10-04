@@ -16,18 +16,21 @@ class Section(models.Model):
 
 
 class Product(models.Model):
+    PRODUCT_TYPES = (
+        ("package_based", "Package Based"),
+        ("range_based", "Range Based"),
+    )
     section = models.ForeignKey(Section, related_name="products", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to="products/", blank=True, null=True)
+    product_type = models.CharField(max_length=20, choices=PRODUCT_TYPES)
+
+    min_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    max_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} ({self.section.name})"
-
-    def clean(self):
-        # هذا التحقق يضمن وجود باكيج واحد على الأقل لكل منتج
-        if self.pk and not self.packages.exists():
-            raise ValidationError("المنتج يجب أن يحوي باكيج واحد على الأقل")
 
 
 class Package(models.Model):
@@ -56,10 +59,12 @@ class PackagePrice(models.Model):
         return f"{self.package.name} - {self.currency}: {self.amount}"
 
 
-class RedeemCode(models.Model):
-    product = models.ForeignKey(Product, related_name="codes", on_delete=models.CASCADE)
-    code = models.CharField(max_length=255)
-    used = models.BooleanField(default=False)
+class Favorite(models.Model):
+    user = models.ForeignKey(User, related_name="favorites", on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name="favorited_by", on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ("user", "product")
 
     def __str__(self):
-        return f"{self.code} - {'Used' if self.used else 'Available'}"
+        return f"{self.user} - {self.product.name}"

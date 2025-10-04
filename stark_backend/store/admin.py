@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Section, Product, Package, PackagePrice, RedeemCode
+from .models import Section, Product, Package, PackagePrice
 
 @admin.register(Section)
 class SectionAdmin(admin.ModelAdmin):
@@ -30,7 +30,3 @@ class PackageAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     inlines = [PackagePriceInline]
 
-@admin.register(RedeemCode)
-class RedeemCodeAdmin(admin.ModelAdmin):
-    list_display = ("id", "product", "code", "used")
-    list_filter = ("used",)

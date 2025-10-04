@@ -9,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id","full_name", "name", "email", "phone", "role",
-                  "country", "optional_phone", "agent", "is_verified"]
+                  "country", "optional_phone", "agent", "is_verified", 'is_banned']
         read_only_fields = ["id", "is_verified"]
 
     def get_is_verified(self, obj):

@@ -4,6 +4,8 @@ from django.db import models
 from django.core.validators import RegexValidator
 from rest_framework.permissions import BasePermission
 
+from wallets.models import Wallet
+
 class UserManager(BaseUserManager):
     def create_user(self, name, password=None, email=None, phone=None, role="user", **extra_fields):
         if not name:
@@ -41,6 +43,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="user")
     country = models.CharField(max_length=100, null=True, blank=True)
     optional_phone = models.CharField(max_length=20, null=True, blank=True)
+    is_banned = models.BooleanField(default=False) 
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

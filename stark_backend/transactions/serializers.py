@@ -7,7 +7,8 @@ class TransactionSerializer(serializers.ModelSerializer):
         model = Transaction
         fields = [
             "id", "user", "agent", "admin", "wallet",
-            "transaction_type", "amount", "status", "note", "created_at"
+            "transaction_type", "amount", "status", "note",
+            "created_at", "recipient_wallet"
         ]
         read_only_fields = ["id", "status", "created_at"]
 
@@ -22,3 +23,8 @@ class CreateTransactionSerializer(serializers.ModelSerializer):
         if wallet.balance < amount and attrs.get("transaction_type") == "purchase":
             raise serializers.ValidationError("Insufficient balance")
         return attrs
+
+
+    def perform_create(self, serializer):
+        # عند إنشاء عملية جديدة، يحفظ المستخدم تلقائيًا من request.user
+        serializer.save(user=self.request.user)
