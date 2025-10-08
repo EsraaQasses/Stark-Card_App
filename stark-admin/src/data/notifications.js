@@ -1,0 +1,77 @@
+import avatar2 from './avatar2.jpg';
+import avatar3 from './avatar3.png';
+import avatar4 from './avatar4.jpg';
+import avatar from './avatar.jpg';
+
+export const notificationData = [
+  {
+    image: avatar2,
+    message: 'Manual Payment Pending Approval',
+    desc: 'Agent Khalid submitted $500 USD for user #301. Requires reconciliation.',
+    time: 'Just now',
+    type: 'payment',
+    priority: 'high',
+    isNew: true,
+    requiresAction: true,
+  },
+  {
+    image: avatar3,
+    message: 'New User Wallet Deposit',
+    desc: 'User Fadi (#157) deposited 250,000 SYP via Agent 009.',
+    time: '3 hours ago',
+    type: 'success',
+    priority: 'low',
+    isNew: true,
+    requiresAction: false,
+  },
+  {
+    image: avatar4,
+    message: 'System Alert: SYP Wallet Low',
+    desc: 'The main Syrian Lira balance is below the critical threshold. Refill required.',
+    time: 'Yesterday, 10:15 PM',
+    type: 'warning',
+    priority: 'high',
+    isNew: true,
+    requiresAction: true,
+  },
+  {
+    image: avatar,
+    message: 'E-commerce Peak Sales',
+    desc: 'The "Games" category saw a 40% increase in volume this hour.',
+    time: '5 hours ago',
+    type: 'success',
+    priority: 'low',
+    isNew: true,
+    requiresAction: false,
+  },
+  {
+    image: avatar2,
+    message: 'Agent Role Update',
+    desc: 'Agent 012 (Sara) was successfully promoted to Senior Agent.',
+    time: '2 days ago',
+    type: 'info',
+    priority: 'medium',
+    isNew: false,
+    requiresAction: false,
+  },
+  {
+    image: avatar3,
+    message: 'Suspicious Activity Detected',
+    desc: 'Multiple failed login attempts from unknown IP for admin account.',
+    time: '1 hour ago',
+    type: 'warning',
+    priority: 'high',
+    isNew: true,
+    requiresAction: true,
+  },
+  {
+    image: avatar4,
+    message: 'Currency Exchange Completed',
+    desc: 'Batch exchange of $1,000 to SYP processed successfully.',
+    time: '6 hours ago',
+    type: 'success',
+    priority: 'low',
+    isNew: false,
+    requiresAction: false,
+  },
+];
