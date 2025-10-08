@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "dashboard",
     "payment_methods",
     'third_party_apis',
+    'system',
 ]
 
 
