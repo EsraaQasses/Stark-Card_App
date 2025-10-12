@@ -1,27 +1,42 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    SectionViewSet, ProductViewSet, PackageViewSet, PackagePriceViewSet, FavoriteViewSet,
-    SectionListView, ProductListBySectionView, PackagePriceListByProductView  # views المستخدم
+    SectionViewSet, ProductViewSet, UserSectionListView, UserProductListView,
+    FavoriteViewSet, PurchaseViewSet, ExternalProductViewSet, StoreProductViewSet,
+    PackageViewSet  # ADD THIS IMPORT
 )
 
-# Router للأدمن
-router = DefaultRouter()
-router.register(r"sections", SectionViewSet, basename="section")
-router.register(r"products", ProductViewSet, basename="product")
-router.register(r"packages", PackageViewSet, basename="package")
-router.register(r"package-prices", PackagePriceViewSet, basename="packageprice")
+admin_router = DefaultRouter()
+admin_router.register(r"sections", SectionViewSet, basename="admin-section")
+admin_router.register(r"products", ProductViewSet, basename="admin-product")
+admin_router.register(r"external-products", ExternalProductViewSet, basename='externalproduct')
+admin_router.register(r"store-products", StoreProductViewSet, basename='storeproduct')
+admin_router.register(r"packages", PackageViewSet, basename='package')  # ADD THIS LINE
+
+user_router = DefaultRouter()
+user_router.register(r"sections", UserSectionListView, basename="user-section")
+user_router.register(r"products", UserProductListView, basename="user-product")
 
 urlpatterns = [
-    # مسارات الأدمن (CRUD كامل)
-    path("", include(router.urls)),
-
-    # مسارات المستخدم العادي
-    path("user/sections/", SectionListView.as_view(), name="user_sections"),
-    path("user/sections/<int:section_id>/products/", ProductListBySectionView.as_view(), name="user_products_by_section"),
-    path("user/products/<int:product_id>/prices/", PackagePriceListByProductView.as_view(), name="user_package_prices_by_product"),
+    path("admin/", include(admin_router.urls)),
+    
+    path("admin/products/<int:pk>/requirements/", 
+         ProductViewSet.as_view({'get': 'requirements', 'post': 'requirements', 'delete': 'requirements'}),
+         name="product-requirements"),
+    path("admin/products/bulk-toggle/", 
+         ProductViewSet.as_view({'post': 'bulk_toggle'}), 
+         name="bulk-toggle-products"),
+    
+    path("user/", include(user_router.urls)),
     path("user/favorites/", FavoriteViewSet.as_view({"get": "list"}), name="user_favorites"),
     path("user/favorites/add/", FavoriteViewSet.as_view({"post": "add"}), name="user_add_favorite"),
     path("user/favorites/remove/", FavoriteViewSet.as_view({"post": "remove"}), name="user_remove_favorite"),
-
+    
+    path("user/purchases/", PurchaseViewSet.as_view({'post': 'purchase'}), name='user_purchase'),
+    
+    path("user/featured-products/", UserProductListView.as_view({'get': 'featured'}), name='featured_products'),
+    
+    path("user/products/search/", 
+         UserProductListView.as_view({'get': 'search'}), 
+         name="product-search"),
 ]

@@ -7,6 +7,7 @@ class ThirdPartyAPI(models.Model):
     PROVIDER_CHOICES = [
         ("daily", "Daily"),
         ("alfaour", "Alfaour"),
+        ("alaaeddin", "Alaaeddin"),
     ]
     
     name = models.CharField(max_length=120)

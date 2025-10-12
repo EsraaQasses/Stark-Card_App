@@ -1,17 +1,19 @@
-from rest_framework import viewsets
+# payment_methods/views.py
+from rest_framework import viewsets, generics
 from .models import PaymentMethod
-from .serializers import PaymentMethodSerializer
-from users.permissions import IsAdminUser
-from rest_framework import generics
-from users.permissions import IsRegularUser
+from .serializers import PaymentMethodSerializer, PaymentMethodCreateSerializer, PaymentMethodFieldSerializer
+from users.permissions import IsAdminUser, IsRegularUser
 
 class PaymentMethodAdminViewSet(viewsets.ModelViewSet):
     queryset = PaymentMethod.objects.all()
-    serializer_class = PaymentMethodSerializer
-    permission_classes = [IsAdminUser]  # CRUD للأدمن فقط
-
+    permission_classes = [IsAdminUser]
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return PaymentMethodCreateSerializer
+        return PaymentMethodSerializer
 
 class PaymentMethodListView(generics.ListAPIView):
     queryset = PaymentMethod.objects.filter(is_active=True)
     serializer_class = PaymentMethodSerializer
-    permission_classes = [IsRegularUser]  # user و agent فقط
+    permission_classes = [IsRegularUser]

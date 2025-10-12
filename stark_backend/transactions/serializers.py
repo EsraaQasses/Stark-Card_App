@@ -1,3 +1,4 @@
+# transactions/serializers.py - CLEANED UP VERSION
 from rest_framework import serializers
 from .models import Transaction
 from wallets.models import Wallet
@@ -20,11 +21,8 @@ class CreateTransactionSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         wallet = attrs.get("wallet")
         amount = attrs.get("amount")
-        if wallet.balance < amount and attrs.get("transaction_type") == "purchase":
+        transaction_type = attrs.get("transaction_type")
+        
+        if transaction_type == "purchase" and wallet.balance < amount:
             raise serializers.ValidationError("Insufficient balance")
         return attrs
-
-
-    def perform_create(self, serializer):
-        # عند إنشاء عملية جديدة، يحفظ المستخدم تلقائيًا من request.user
-        serializer.save(user=self.request.user)

@@ -63,7 +63,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.name} ({self.role})"
-
+    @property
+    def username(self):
+        return self.name
 
 class UserIdentity(models.Model):
     PROVIDER_CHOICES = [

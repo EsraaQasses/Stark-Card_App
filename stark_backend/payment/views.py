@@ -1,33 +1,78 @@
+# payments/views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import permissions, status
-from store.models import Product, PackagePrice
-from .services.purchase_service import PurchaseService
+from rest_framework import status, permissions, viewsets
+from rest_framework.decorators import action
+from .models import Payment, PaymentConfig
+from .serializers import PaymentSerializer, PaymentCreateSerializer, PaymentConfigSerializer
+from .services.payment_service import PaymentService
+from users.permissions import IsAdminUser
+
+class PaymentConfigView(APIView):
+    permission_classes = [IsAdminUser]
+    
+    def get(self, request):
+        """Get payment configuration"""
+        config = PaymentConfig.get_config()
+        serializer = PaymentConfigSerializer(config)
+        return Response(serializer.data)
+    
+    def put(self, request):
+        """Update payment configuration"""
+        config = PaymentConfig.get_config()
+        serializer = PaymentConfigSerializer(config, data=request.data)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class PurchaseView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-
+    
     def post(self, request):
-        user = request.user
-        product_id = request.data.get("product_id")
-        package_price_id = request.data.get("package_price_id")
-        custom_amount = request.data.get("amount")
-        currency = request.data.get("currency")
-        extra_payload = request.data.get("extra", {})
-
-        try:
-            product = Product.objects.get(id=product_id)
-        except Product.DoesNotExist:
-            return Response({"detail": "المنتج غير موجود"}, status=status.HTTP_404_NOT_FOUND)
-
-        # نحدد المبلغ
-        if product.product_type == "package_based":
-            package_price = PackagePrice.objects.get(id=package_price_id, currency=currency)
-            amount = package_price.amount
+        """Process a purchase payment"""
+        serializer = PaymentCreateSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        store_product_id = serializer.validated_data['store_product_id']
+        user_inputs = serializer.validated_data['user_inputs']
+        
+        result = PaymentService.process_payment(
+            store_product_id=store_product_id,
+            user=request.user,
+            user_inputs=user_inputs
+        )
+        
+        if result['success']:
+            return Response(result, status=status.HTTP_200_OK)
         else:
-            amount = float(custom_amount)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
-        # نستخدم الـ service
-        result = PurchaseService.make_purchase(user, product, amount, currency, extra_payload)
-
-        return Response(result, status=status.HTTP_200_OK if result["success"] else status.HTTP_400_BAD_REQUEST)
+class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
+    """View payment history"""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PaymentSerializer
+    
+    def get_queryset(self):
+        return Payment.objects.filter(user=self.request.user).select_related(
+            'store_product', 'wallet'
+        ).order_by('-created_at')
+    
+    @action(detail=False, methods=['get'])
+    def status(self, request):
+        """Get payment status summary"""
+        payments = self.get_queryset()
+        
+        status_summary = {
+            'total': payments.count(),
+            'success': payments.filter(status='success').count(),
+            'pending': payments.filter(status='pending').count(),
+            'failed': payments.filter(status='failed').count(),
+            'total_spent': sum(p.final_price for p in payments.filter(status='success'))
+        }
+        
+        return Response(status_summary)

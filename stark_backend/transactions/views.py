@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, permissions
 from .models import Transaction
-from dashboard.serializers import TransactionSerializer
+from .serializers import TransactionSerializer, CreateTransactionSerializer
 from agents import models
 
 
@@ -63,8 +63,21 @@ class ApproveTransactionView(APIView):
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
-    serializer_class = TransactionSerializer
-    permission_classes = [permissions.IsAuthenticated]  # كل المستخدمين مسموح لهم الوصول
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CreateTransactionSerializer
+        return TransactionSerializer
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        
+        # Auto-assign agent if user has one
+        if hasattr(user, 'agent'):
+            serializer.save(user=user, agent=user.agent)
+        else:
+            serializer.save(user=user)
 
     def get_queryset(self):
         user = self.request.user

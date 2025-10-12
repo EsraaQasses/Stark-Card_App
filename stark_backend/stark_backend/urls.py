@@ -14,7 +14,10 @@ urlpatterns = [
     path("api/payment_methods/", include("payment_methods.urls")),
     path("api/third_party_apis/", include("third_party_apis.urls")),
     path("api/payment/", include("payment.urls")),
-    path('api/system/', include('system.urls')),
+    path("api/all_requests/", include("all_requests.urls")),
+    path("api/shipping/", include("shipping.urls")),
+    path('api/qr/', include('qr_code.urls')),
+    # path('api/system/', include('system.urls')),
 ]
 
 if settings.DEBUG:

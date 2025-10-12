@@ -6,6 +6,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .serializers import UserSerializer, RegisterSerializer, VerifyOTPSerializer, LoginSerializer
 from rest_framework.permissions import BasePermission
+from rest_framework.decorators import api_view, permission_classes
+from django.contrib.auth.models import User
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -92,3 +94,42 @@ class UserProfileView(generics.RetrieveAPIView):
     def get_object(self):
         return self.request.user
     
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ban_user(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        user.is_active = False
+        user.save()
+        return Response({"message": f"User {user.username} has been banned"}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def unban_user(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        user.is_active = True
+        user.save()
+        return Response({"message": f"User {user.username} has been unbanned"}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_users(request):
+    users = User.objects.all()
+    user_data = [
+        {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_active": user.is_active,
+            "role": getattr(user, 'role', 'user')  # Assuming you have a role field
+        }
+        for user in users
+    ]
+    return Response({"users": user_data}, status=status.HTTP_200_OK)
