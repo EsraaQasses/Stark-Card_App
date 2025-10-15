@@ -18,9 +18,9 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
 #  تحكم بالإعلانات (للأدمن فقط)
 class AdViewSet(viewsets.ModelViewSet):
-    queryset = Ad.objects.all().order_by('-created_at')
+    queryset = Ad.objects.all()
     serializer_class = AdSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [permissions.IsAdminUser]
 
 #  عرض الإعلانات للمستخدمين
 class AdListView(generics.ListAPIView):

@@ -18,15 +18,14 @@ from transactions.models import Transaction
 from store.models import Product, PackagePrice
 from third_party_apis.services.api_service import APIService
 from .models import AgentProfile
-from .serializers import AgentProductAssignmentSerializer, AgentProfileSerializer
-from users.serializers import AgentUserSerializer
+from .serializers import AgentProductAssignmentSerializer, AgentProfileRegionSerializer, AgentProfileSerializer
+from users.serializers import SubordinateUserSerializer, UserSerializer
 
 User = get_user_model()
 getcontext().prec = 28
 
 class AgentUsersListView(generics.ListAPIView):
-    serializer_class = AgentUserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get_queryset(self):
         user = self.request.user
@@ -42,6 +41,11 @@ class AgentUsersListView(generics.ListAPIView):
 
         return User.objects.none()
 
+    def get_serializer_class(self):
+        if getattr(self.request.user, "role", None) == "admin":
+            return SubordinateUserSerializer  
+        return UserSerializer  
+    
 # --------------------------------------------------
 # دوال تحويل العملات
 # --------------------------------------------------
@@ -375,38 +379,61 @@ class AgentListView(APIView):
         return Response(data)
 
 # ------------------ تحديد عمولة الوكيل ------------------
-@api_view(['POST'])
-@permission_classes([IsAuthenticated, IsAdminUser])
-def set_agent_commission(request, agent_id):
-    agent_profile = get_object_or_404(AgentProfile, user__id=agent_id)
-    percent = request.data.get('commission_rate')
+class AgentCommissionAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
-    try:
-        percent = float(percent)
-        if percent < 0 or percent > 100:
-            raise ValueError
-    except (TypeError, ValueError):
-        return Response(
-            {'error': 'Invalid commission percent, must be between 0 and 100'},
-            status=status.HTTP_400_BAD_REQUEST
+    def get(self, request, agent_id):
+        """عرض عمولة الوكيل"""
+        agent_profile = get_object_or_404(AgentProfile, user__id=agent_id)
+        return Response({
+            "agent_name": agent_profile.user.full_name,
+            "commission_rate": agent_profile.commission_rate
+        })
+
+    def post(self, request, agent_id):
+        """إضافة أو تعديل العمولة"""
+        agent_profile = get_object_or_404(AgentProfile, user__id=agent_id)
+        percent = request.data.get('commission_rate')
+
+        try:
+            percent = float(percent)
+            if percent < 0 or percent > 100:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'النسبة غير صالحة، يجب أن تكون بين 0 و 100'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        agent_profile.commission_rate = percent
+        agent_profile.save()
+
+  #  إرسال إشعار للوكيل
+        Notification.objects.create(
+            recipient=agent_profile.user,
+            title="تغيير نسبة العمولة",
+            message=f"تم تحديث نسبة العمولة الخاصة بك إلى {agent_profile.commission_rate}%",
+            icon="percent"
         )
 
-    agent_profile.commission_rate = percent
-    agent_profile.save()
+        return Response({
+            "message": f"تم تعيين العمولة للوكيل {agent_profile.user.full_name}",
+            "commission_rate": agent_profile.commission_rate
+        }, status=status.HTTP_200_OK)
 
-    # ----------------- إشعار الوكيل -----------------
-    Notification.objects.create(
-        recipient=agent_profile.user,
-        title="تغيير عمولة الوكيل",
-        message=f"تم تحديد عمولة {percent}% لحسابك.",
-        icon="percent"
-    )
+    def patch(self, request, agent_id):
+        """تعديل العمولة فقط"""
+        return self.post(request, agent_id)
 
-    return Response({
-        'message': f'Commission for {agent_profile.user.name} set to {percent}%',
-        'agent': AgentProfileSerializer(agent_profile).data
-    }, status=status.HTTP_200_OK)
-
+    def delete(self, request, agent_id):
+        """حذف العمولة (إعادتها إلى 0)"""
+        agent_profile = get_object_or_404(AgentProfile, user__id=agent_id)
+        agent_profile.commission_rate = 0
+        agent_profile.save()
+        return Response({
+            "message": f"تم حذف العمولة للوكيل {agent_profile.user.full_name}"
+        }, status=status.HTTP_200_OK)
+    
 
 # ------------------ إضافة / حذف / عرض التخصيصات ------------------
 class AgentProductAssignmentAPIView(APIView):
@@ -462,3 +489,48 @@ class AgentProductAssignmentAPIView(APIView):
         return Response({"message": "تم حذف التخصيص بنجاح"}, status=status.HTTP_200_OK)
     
     
+# ------------------ إضافة / حذف / عرض منطقة للوكيل ------------------
+class AgentRegionAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request):
+        """عرض جميع الوكلاء اللي عندهم منطقة فقط"""
+        agents = AgentProfile.objects.exclude(region__isnull=True).exclude(region__exact="")
+        serializer = AgentProfileRegionSerializer(agents, many=True)
+        return Response(serializer.data)
+
+
+    def post(self, request):
+        """إضافة أو تعديل المنطقة لوكيل محدد"""
+        agent_id = request.data.get('agent_id')
+        region = request.data.get('region')
+
+        if not agent_id or not region:
+            return Response({"error": "agent_id و region مطلوبين"}, status=status.HTTP_400_BAD_REQUEST)
+
+        agent_profile = get_object_or_404(AgentProfile, user__id=agent_id)
+        agent_profile.region = region
+        agent_profile.save()
+
+        serializer = AgentProfileRegionSerializer(agent_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, agent_id=None):
+        """تعديل المنطقة لوكيل محدد"""
+        agent_profile = get_object_or_404(AgentProfile, user__id=agent_id)
+        region = request.data.get('region')
+
+        if region is not None:
+            agent_profile.region = region
+            agent_profile.save()
+
+        serializer = AgentProfileRegionSerializer(agent_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, agent_id=None):
+        """حذف المنطقة لوكيل محدد"""
+        agent_profile = get_object_or_404(AgentProfile, user__id=agent_id)
+        agent_profile.region = None
+        agent_profile.save()
+        return Response({"message": f"تم حذف المنطقة للوكيل {agent_profile.user.full_name}"}, status=status.HTTP_200_OK)
+

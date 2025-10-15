@@ -217,7 +217,7 @@ def promote_to_sub_admin(request, user_id):
         return Response({'message': f'{user.name} is already an admin.'}, status=status.HTTP_400_BAD_REQUEST)
 
     user.role = "admin"
-    # 👇 لاحقاً: يمكن إضافة صلاحيات مخصصة له
+    #  لاحقاً: يمكن إضافة صلاحيات مخصصة له
     # user.admin_permissions = {...}
     user.save()
 

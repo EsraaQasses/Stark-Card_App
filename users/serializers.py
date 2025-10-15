@@ -219,6 +219,23 @@ class AgentUserSerializer(serializers.ModelSerializer):
     def get_status(self, obj):
         return "Banned" if getattr(obj, "is_banned", False) else "Active"
 
+
+#----بيانات المستخدمين عند العرض على الوكيل----
+class SubordinateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "full_name",
+            "name",
+            "email",
+            "phone",
+            "role",
+            "country",
+            "optional_phone",
+            "is_banned"
+        ]
+        read_only_fields = fields
 # -------------------- User Profile Serializer --------------------
 class UserProfileSerializer(serializers.ModelSerializer):
     connected_agent = serializers.SerializerMethodField()

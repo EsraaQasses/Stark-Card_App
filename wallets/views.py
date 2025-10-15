@@ -60,7 +60,6 @@ def get_wallet_balances_for_all_users():
     return balances
 
 
-
 #   لجلب سعر الصرف مع نسبة التغير 
 def get_exchange_rates():
     rates = ExchangeRate.objects.order_by('-id')[:2]  # آخر سجلين

@@ -42,3 +42,18 @@ class Ad(models.Model):
 
     def __str__(self):
         return f"{self.section} - {self.product}"
+    
+
+#--------------Last action---------------
+class LastAction(models.Model):
+    admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name='admin_actions')
+    target_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='target_actions', null=True, blank=True)
+    action_type = models.CharField(max_length=100)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.admin} - {self.action_type} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
