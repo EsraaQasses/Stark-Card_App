@@ -133,7 +133,8 @@ class AgentPurchaseView(APIView):
                 amount=amount,
                 status="pending",
                 note=note
-            )
+
+)
 
             # خصم المبلغ مؤقتاً من الوكيل
             agent_wallet.balance -= amount
@@ -174,7 +175,7 @@ class AgentPurchaseView(APIView):
                 recipient=user,
                 title="تمت عملية الشراء بنجاح ✅",
                 message=f"تم شراء {product.name} بمبلغ {amount} {currency}",
-                icon="check-circle"
+                icon=""
     )
 
             return Response({"success": True, "message": "تمت عملية الدفع بنجاح."}, status=status.HTTP_200_OK)
@@ -219,7 +220,7 @@ def agent_approve_payment_view(request, transaction_id):
             recipient=trx.user,
             title="تم رفض الدفع ❌",
             message=f"تم رفض طلب شراء {trx.wallet} بمبلغ {trx.amount} {trx.wallet.currency} من قبل الوكيل {agent.name}.",
-            icon="x-circle"
+            icon=""
         )
 
         return Response({"success": False, "message": "تم رفض الطلب."})
@@ -262,7 +263,7 @@ def agent_approve_payment_view(request, transaction_id):
             recipient=trx.user,
             title="تمت الموافقة على الدفع ✅",
             message=f"تمت الموافقة على طلب شراء {trx.wallet} بمبلغ {trx.amount} {trx.wallet.currency} من قبل الوكيل {agent.name}.",
-            icon="check-circle"
+            icon=""
         )
 
     return Response({"success": True, "message": "تمت الموافقة بنجاح واحتساب العمولة."})
@@ -298,7 +299,7 @@ def promote_to_agent(request, user_id):
         recipient=user,
         title="تمت ترقيتك إلى وكيل ✅",
         message=f"تهانينا {user.name}! لقد تمت ترقيتك إلى وكيل. رمز وكيلك: {user.agent_code}",
-        icon="user-check"
+        icon=""
     )
 
     return Response({
@@ -331,7 +332,7 @@ def demote_to_user(request, user_id):
         recipient=user,
         title="تم تحويلك إلى مستخدم عادي ⚠️",
         message=f"مرحبًا {user.name}, لقد تم تحويلك من وكيل إلى مستخدم عادي.",
-        icon="user-minus"
+        icon=""
     )
 
     return Response({
@@ -413,7 +414,7 @@ class AgentCommissionAPIView(APIView):
             recipient=agent_profile.user,
             title="تغيير نسبة العمولة",
             message=f"تم تحديث نسبة العمولة الخاصة بك إلى {agent_profile.commission_rate}%",
-            icon="percent"
+            icon=""
         )
 
         return Response({
@@ -475,6 +476,13 @@ class AgentProductAssignmentAPIView(APIView):
             agent=agent, product=product,
             defaults={'commission_percent': commission_percent}
         )
+
+        Notification.objects.create(
+            recipient=agent,
+            title="تخصيص منتج جديد",
+            message=f"تم {'إضافة' if created else 'تعديل'} تخصيص المنتج {product.name} بالنسبة {commission_percent}%",
+            icon=""
+)
 
         serializer = AgentProductAssignmentSerializer(assignment)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)

@@ -80,6 +80,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "users.middleware.check_ban_middleware",
+    'system.middleware.SystemLogMiddleware', 
+    "system.middleware.AdminActionMiddleware", 
+
 ]
 
 ROOT_URLCONF = 'stark_backend.urls'

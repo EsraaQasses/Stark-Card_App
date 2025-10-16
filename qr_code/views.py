@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
+
+from system.models import Notification
 from .models import UserQRCode
 from .serializers import UserQRCodeSerializer, QRCodeGenerateSerializer
 from .utils import generate_user_qr_code
@@ -49,7 +51,25 @@ class GenerateUserQRCodeView(APIView):
         qr_code_obj.save()
         
         action = "created" if created else "regenerated"
-        return Response({
+        
+        # ✅ إشعار للمستخدم
+        Notification.objects.create(
+            recipient=user,
+            title="رمز QR",
+            message=f"تم { 'إنشاء' if created else 'تجديد' } رمز QR الخاص بك بنجاح.",
+            icon="",
+        )
+
+        # ✅ إشعار إضافي للأدمن إذا كان هو من أنشأ الكود لمستخدم آخر
+        if request.user != user and request.user.role == 'admin':
+            Notification.objects.create(
+                recipient=request.user,
+                title="تم إنشاء رمز QR لمستخدم آخر",
+                message=f"تم توليد رمز QR للمستخدم {user.name}.",
+                icon="",
+            )
+
+            return Response({
             "message": f"QR code {action} successfully",
             "qr_code": UserQRCodeSerializer(qr_code_obj).data
         }, status=status.HTTP_201_CREATED)
@@ -92,4 +112,12 @@ class GetMyQRCodeView(generics.RetrieveAPIView):
             qr_code_obj.qr_data = qr_data
             qr_code_obj.save()
         
+        # ✅ إشعار للمستخدم عند توليد QR تلقائي
+            Notification.objects.create(
+                recipient=self.request.user,
+                title="رمز QR",
+                message="تم إنشاء رمز QR الخاص بك تلقائياً.",
+                icon="",
+            )
+
         return qr_code_obj

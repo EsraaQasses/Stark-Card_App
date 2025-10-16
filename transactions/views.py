@@ -2,6 +2,8 @@ from django.db import transaction as db_transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, permissions
+
+from system.models import Notification
 from .models import Transaction
 from .serializers import TransactionSerializer, CreateTransactionSerializer
 from agents import models
@@ -54,6 +56,13 @@ class ApproveTransactionView(APIView):
                 # الملاحظة: عمليات الشراء (purchase) لا تحتاج موافقة admin
                 transaction_obj.status = "approved"
                 transaction_obj.save()
+
+                Notification.objects.create(
+                    recipient=transaction_obj.user,
+                    title="تمت الموافقة على معاملتك",
+                    message=f"تمت الموافقة على معاملتك بقيمة {transaction_obj.amount} {transaction_obj.wallet.currency}.",
+                    icon="check_circle"
+)
 
                 return Response({"status": transaction_obj.status})
 

@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from django.db import transaction
 
 from agents import serializers
+from system.models import Notification
 from .models import Shipping
 from .serializers import ShippingSerializer, ShippingStatusUpdateSerializer
 from users.permissions import IsAdminUser, IsRegularUser
@@ -36,16 +37,32 @@ class ShippingViewSet(viewsets.ModelViewSet):
             updated_shipping = serializer.save()
             
             # If approved, add funds to wallet
-            if new_status == 'approved' and shipping.status != 'approved':
-                self._process_payment(shipping)
+            # إرسال إشعار حسب الحالة الجديدة
+        if new_status == 'approved' and shipping.status != 'approved':
+            self._process_payment(shipping)
+            Notification.objects.create(
+                recipient=shipping.user,
+                title="تمت الموافقة على طلب الشحن",
+                message=f"تمت الموافقة على شحنتك رقم {shipping.id} بقيمة {shipping.amount}",
+                icon=""
+            )
+
+        elif new_status == 'rejected':
+                reason = request.data.get('admin_notes', 'لم يتم تحديد السبب')
+                Notification.objects.create(
+                recipient=shipping.user,
+                title="تم رفض طلب الشحن",
+                message=f"تم رفض شحنتك رقم {shipping.id}. السبب: {reason}",
+                icon="alert-circle"
+            )
             
             # Update the original request status
-            if new_status == 'approved':
+        if new_status == 'approved':
                 shipping.request.status = 'completed'
-            elif new_status == 'rejected':
+        elif new_status == 'rejected':
                 shipping.request.status = 'rejected'
                 shipping.request.rejection_reason = request.data.get('admin_notes', '')
-            shipping.request.save()
+        shipping.request.save()
         
         return Response({
             "message": f"Shipping status updated to {new_status}",
@@ -81,6 +98,13 @@ class ShippingViewSet(viewsets.ModelViewSet):
             shipping.transaction_ref = f"TXN_{transaction_obj.id}"
             shipping.processed_at = transaction_obj.created_at
             shipping.save()
+
+            Notification.objects.create(
+                recipient=shipping.user,
+                title="تمت إضافة الأموال إلى محفظتك",
+                message=f"تمت إضافة مبلغ {shipping.amount} {shipping.currency} إلى محفظتك بنجاح.",
+                icon=""
+)
             
         except Exception as e:
             # Handle error - you might want to log this

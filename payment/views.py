@@ -7,6 +7,7 @@ from .models import Payment, PaymentConfig
 from .serializers import PaymentSerializer, PaymentCreateSerializer, PaymentConfigSerializer
 from .services.payment_service import PaymentService
 from users.permissions import IsAdminUser
+from system.models import Notification
 
 class PaymentConfigView(APIView):
     permission_classes = [IsAdminUser]
@@ -47,9 +48,23 @@ class PurchaseView(APIView):
             user_inputs=user_inputs
         )
         
+        #  إضافة الإشعار بعد الدفع الناجح فقط
         if result['success']:
+            Notification.objects.create(
+                recipient=request.user,
+                title="تمت عملية الدفع بنجاح",
+                message=f"لقد تمت عملية الدفع للمنتج رقم {store_product_id} بنجاح.",
+                icon="", 
+                priority="normal"
+            )
             return Response(result, status=status.HTTP_200_OK)
         else:
+            Notification.objects.create(
+                recipient=request.user,
+                title="فشل في عملية الدفع",
+                message=f"لم تتم عملية الدفع للمنتج رقم {store_product_id}. يرجى المحاولة لاحقاً.",
+                icon="",
+            )
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
 class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
