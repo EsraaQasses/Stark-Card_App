@@ -45,7 +45,6 @@ export default function Email({ navigation }) {
         <Field label="Email" placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
 
         <Button
-          variant="auth"
           title="Continue"
           width={sx(143)}
           height={sy(55)}

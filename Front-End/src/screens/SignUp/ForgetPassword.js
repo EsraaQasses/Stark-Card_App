@@ -38,7 +38,6 @@ export default function ForgetPassword({ navigation }) {
         />
 
         <Button
-          variant="auth"
           title="Send Code"
           width={143}
           height={55}          onPress={() => {

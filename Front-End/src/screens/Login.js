@@ -60,7 +60,6 @@ export default function Login({ navigation }) {
         </View>
 
         <Button
-         variant="auth"
           title="Login"
           width={sx(143)}
           height={sy(55)}

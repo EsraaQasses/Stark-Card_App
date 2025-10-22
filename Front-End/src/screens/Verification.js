@@ -29,7 +29,6 @@ export default function Verification({ navigation }) {
         />
 
         <Button
-         variant="auth"
           title="Enter"
           width={sx(143)}
           height={sy(55)}
