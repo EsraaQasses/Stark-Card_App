@@ -147,7 +147,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axiosInstance.post('users/login/admin/step3/', {
         session_token: sessionToken,
-        token: token, // This now works for both 2FA and OTP
+        token, // This now works for both 2FA and OTP
       });
 
       const { access, refresh, user: userData } = response.data;

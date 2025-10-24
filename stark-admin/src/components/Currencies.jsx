@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { MdOutlineCancel, MdSwapVert, MdEdit, MdRefresh, MdUpdate } from 'react-icons/md';
-import { AiOutlineArrowUp, AiOutlineArrowDown, AiOutlineSave, AiOutlineClose } from 'react-icons/ai';
+import React, { useEffect, useState } from 'react';
+import { AiOutlineArrowDown, AiOutlineArrowUp, AiOutlineClose, AiOutlineSave } from 'react-icons/ai';
+import { MdEdit, MdOutlineCancel, MdRefresh, MdSwapVert, MdUpdate } from 'react-icons/md';
 import { useStateContext } from '../contexts/ContextProvider';
-import { Button } from '.';
 import axiosInstance from '../utils/axiosConfig';
+import Button from './Button';
 
 const Currencies = () => {
   const { currentUser } = useStateContext();
@@ -325,10 +325,11 @@ const Currencies = () => {
               </div>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label htmlFor="usd-to-syp-rate" className="block text-sm font-medium mb-1">
                     USD to SYP Rate
                   </label>
                   <input
+                    id="usd-to-syp-rate"
                     type="number"
                     step="0.01"
                     min="0"

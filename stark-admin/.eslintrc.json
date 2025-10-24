@@ -34,11 +34,13 @@
     "no-restricted-syntax": "warn",
     "no-confusing-arrow": "warn",
     "radix": "warn",
-    "quotes": "warn",
     "padded-blocks": "warn",
     "no-use-before-define": "warn",
     "prefer-destructuring": "warn",
     "no-template-curly-in-string": "warn",
-    "no-undef": "error"
+    "no-undef": "error",
+    "jsx-a11y/label-has-associated-control": "off",
+    "quotes": "off",
+    "ignoreStringLiterals": "true",
   }
 }

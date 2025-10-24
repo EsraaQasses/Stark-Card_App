@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MdOutlineCancel } from 'react-icons/md';
-import { Button } from '.';
 import { useStateContext } from '../contexts/ContextProvider';
 import axiosInstance from '../utils/axiosConfig';
+import Button from './Button';
 
 const Payments = () => {
   const { currentColor, handleClose } = useStateContext();

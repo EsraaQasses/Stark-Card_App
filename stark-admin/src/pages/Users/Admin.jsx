@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
 import {
-  GridComponent,
-  ColumnsDirective,
   ColumnDirective,
+  ColumnsDirective,
+  Filter,
+  GridComponent,
+  Inject,
   Page,
   Selection,
-  Inject,
-  Toolbar,
   Sort,
-  Filter,
+  Toolbar,
 } from '@syncfusion/ej2-react-grids';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Header } from '../../components';
 import axiosInstance from '../../utils/axiosConfig';
 

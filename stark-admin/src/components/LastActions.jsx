@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdOutlineCancel, MdHistory, MdPerson, MdAdminPanelSettings } from 'react-icons/md';
 import { FaUserShield, FaUserCheck, FaUserTimes, FaMoneyBillWave } from 'react-icons/fa';
-import { Button } from '.';
+import Button from './Button';
 import { useStateContext } from '../contexts/ContextProvider';
 import axiosInstance from '../utils/axiosConfig';
 

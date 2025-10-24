@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 
 const TwoFASetup = ({ onSetupComplete, onCancel }) => {
   const [step, setStep] = useState(1);
@@ -185,7 +185,7 @@ const TwoFASetup = ({ onSetupComplete, onCancel }) => {
         </p>
 
         <div className="bg-white p-3 rounded border">
-          {backupCodes.map((code, index) => (
+          {backupCodes.map((code) => (
             <div key={code} className="font-mono text-sm text-center py-1 border-b last:border-b-0">
               {code}
             </div>

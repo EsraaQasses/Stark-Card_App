@@ -1,7 +1,7 @@
 import React from 'react';
 import { MdOutlineCancel } from 'react-icons/md';
 
-import { Button } from '.';
+import Button from './Button';
 import { userProfileData } from '../data/userProfile';
 import { useStateContext } from '../contexts/ContextProvider';
 

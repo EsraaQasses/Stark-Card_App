@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { FaBell, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaMoneyCheckAlt } from 'react-icons/fa';
 import { MdOutlineCancel } from 'react-icons/md';
-import { FaExclamationTriangle, FaCheckCircle, FaInfoCircle, FaMoneyCheckAlt, FaBell } from 'react-icons/fa';
 
-import { Button } from '.';
 import { useStateContext } from '../contexts/ContextProvider';
 import axiosInstance from '../utils/axiosConfig';
+import Button from './Button';
 
 const Notification = () => {
   const { currentColor, handleClick } = useStateContext();

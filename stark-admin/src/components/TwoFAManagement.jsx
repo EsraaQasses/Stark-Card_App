@@ -1,44 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import TwoFASetup from './TwoFASetup';
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import TwoFASetup from "./TwoFASetup";
 
 const TwoFAManagement = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showSetup, setShowSetup] = useState(false);
 
   const loadStatus = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:8000/api/users/2fa/status/', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+      const response = await axios.get(
+        "http://localhost:8000/api/users/2fa/status/",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
         }
-      });
+      );
       setStatus(response.data);
     } catch (err) {
-      setError('Failed to load 2FA status');
+      setError("Failed to load 2FA status");
     } finally {
       setLoading(false);
     }
   };
 
   const disable2FA = async () => {
-    if (!window.confirm('Are you sure you want to disable two-factor authentication? This will make your account less secure.')) {
+    if (
+      !window.confirm(
+        "Are you sure you want to disable two-factor authentication? This will make your account less secure."
+      )
+    ) {
       return;
     }
 
     try {
       setLoading(true);
-      await axios.post('http://localhost:8000/api/users/2fa/disable/', {}, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        }.
-      });
+      await axios.post(
+        "http://localhost:8000/api/users/2fa/disable/",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        }
+      );
       await loadStatus();
     } catch (err) {
-      setError('Failed to disable 2FA');
+      setError("Failed to disable 2FA");
     } finally {
       setLoading(false);
     }
@@ -50,7 +61,7 @@ const TwoFAManagement = () => {
 
   if (showSetup) {
     return (
-      <TwoFASetup 
+      <TwoFASetup
         onSetupComplete={() => {
           setShowSetup(false);
           loadStatus();
@@ -64,9 +75,9 @@ const TwoFAManagement = () => {
     return (
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4" />
+          <div className="h-4 bg-gray-200 rounded w-full mb-2" />
+          <div className="h-4 bg-gray-200 rounded w-2/3" />
         </div>
       </div>
     );
@@ -75,13 +86,17 @@ const TwoFAManagement = () => {
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Two-Factor Authentication</h2>
-        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-          status?.is_2fa_enabled
-            ? 'bg-green-100 text-green-800'
-            : 'bg-yellow-100 text-yellow-800'
-        }`}>
-          {status?.is_2fa_enabled ? 'Enabled' : 'Not Set Up'}
+        <h2 className="text-xl font-bold text-gray-900">
+          Two-Factor Authentication
+        </h2>
+        <div
+          className={`px-3 py-1 rounded-full text-sm font-medium ${
+            status?.is_2fa_enabled
+              ? "bg-green-100 text-green-800"
+              : "bg-yellow-100 text-yellow-800"
+          }`}
+        >
+          {status?.is_2fa_enabled ? "Enabled" : "Not Set Up"}
         </div>
       </div>
 
@@ -95,17 +110,32 @@ const TwoFAManagement = () => {
         <div className="space-y-4">
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center">
-              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-5 h-5 text-green-600 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
-              <span className="text-green-700">Your account is protected with two-factor authentication</span>
+              <span className="text-green-700">
+                Your account is protected with two-factor authentication
+              </span>
             </div>
           </div>
 
           <div className="space-y-3">
             <h3 className="font-semibold text-gray-900">Active Devices</h3>
             {status.devices?.map((device) => (
-              <div key={device.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div
+                key={device.id}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              >
                 <div>
                   <p className="font-medium">{device.name}</p>
                   <p className="text-sm text-gray-500">
@@ -133,16 +163,19 @@ const TwoFAManagement = () => {
             className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
             type="button"
           >
-            {loading ? 'Disabling...' : 'Disable 2FA'}
+            {loading ? "Disabling..." : "Disable 2FA"}
           </button>
         </div>
       ) : (
         <div className="space-y-6">
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h3 className="font-semibold text-yellow-800 mb-2">Enhanced Security</h3>
+            <h3 className="font-semibold text-yellow-800 mb-2">
+              Enhanced Security
+            </h3>
             <p className="text-yellow-700 text-sm">
-              Two-factor authentication adds an extra layer of security to your account.
-              You&apos;ll need to enter a code from your authenticator app in addition to your password when signing in.
+              Two-factor authentication adds an extra layer of security to your
+              account. You&apos;ll need to enter a code from your authenticator
+              app in addition to your password when signing in.
             </p>
           </div>
 
@@ -150,20 +183,50 @@ const TwoFAManagement = () => {
             <h4 className="font-semibold text-gray-900">How it works:</h4>
             <ul className="space-y-2 text-sm text-gray-600">
               <li className="flex items-center">
-                <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4 text-green-600 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Scan a QR code with Google Authenticator or similar app
               </li>
               <li className="flex items-center">
-                <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4 text-green-600 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Enter a verification code to confirm setup
               </li>
               <li className="flex items-center">
-                <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4 text-green-600 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Receive backup codes for emergency access
               </li>

@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   AccumulationChartComponent,
+  AccumulationDataLabel,
+  AccumulationLegend,
   AccumulationSeriesCollectionDirective,
   AccumulationSeriesDirective,
-  AccumulationLegend,
-  PieSeries,
-  AccumulationDataLabel,
-  Inject as ChartInject,
   AccumulationTooltip,
+  Inject as ChartInject,
+  PieSeries,
 } from '@syncfusion/ej2-react-charts';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Header } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
