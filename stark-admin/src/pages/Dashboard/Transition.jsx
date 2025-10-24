@@ -19,7 +19,7 @@ const Transactions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user, isAuthenticated } = useAuth();
-  
+
   const [filters, setFilters] = useState({
     currency: 'All',
     status: 'All',
@@ -33,60 +33,6 @@ const Transactions = () => {
 
   const toolbarOptions = ['Search', 'Print', 'ExcelExport'];
 
-  // Fetch transactions from backend
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchTransactions();
-    }
-  }, [isAuthenticated]);
-
-  const fetchTransactions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await axiosInstance.get('transactions/transactions/');
-      setTransactions(response.data);
-    } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          err.response?.data?.error || 
-                          'Failed to fetch transactions';
-      setError(errorMessage);
-      console.error('Error fetching transactions:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Transform backend data to match frontend structure
-  const transformedTransactions = useMemo(() => {
-    return transactions.map(txn => ({
-      // Map backend fields to frontend structure
-      id: txn.id,
-      TransactionID: `TXN-${txn.id.toString().padStart(6, '0')}`,
-      Timestamp: txn.created_at,
-      TransactionType: txn.transaction_type,
-      Status: txn.status,
-      Amount: parseFloat(txn.amount),
-      Currency: getWalletCurrency(txn.wallet),
-      Direction: getTransactionDirection(txn),
-      user: txn.user,
-      agent: txn.agent,
-      admin: txn.admin,
-      wallet: txn.wallet,
-      recipient_wallet: txn.recipient_wallet,
-      note: txn.note,
-      created_at: txn.created_at,
-      updated_at: txn.updated_at,
-      
-      // Additional fields for display
-      SourceEntityID: getSourceEntity(txn),
-      TargetEntityID: getTargetEntity(txn),
-      FeeAmount: 0, // Your backend doesn't have fee field, adjust if needed
-    }));
-  }, [transactions]);
-
-  // Helper functions for data transformation
   const getWalletCurrency = (wallet) => {
     if (typeof wallet === 'object' && wallet !== null) {
       return wallet.currency || 'USD';
@@ -124,24 +70,74 @@ const Transactions = () => {
     return 'System';
   };
 
-  const filteredData = useMemo(() => {
-    return transformedTransactions.filter((txn) => {
-      if (filters.currency !== 'All' && txn.Currency !== filters.currency) return false;
-      if (filters.status !== 'All' && txn.Status !== filters.status) return false;
-      if (filters.type !== 'All' && txn.TransactionType !== filters.type) return false;
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-      if (filters.startDate && new Date(txn.Timestamp) < new Date(filters.startDate)) return false;
-      if (filters.endDate && new Date(txn.Timestamp) > new Date(filters.endDate + 'T23:59:59')) return false;
+      const response = await axiosInstance.get('transactions/transactions/');
+      setTransactions(response.data);
+    } catch (err) {
+      const errorMessage = err.response?.data?.detail
+        || err.response?.data?.error
+        || 'Failed to fetch transactions';
+      setError(errorMessage);
+      console.error('Error fetching transactions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      return true;
-    });
-  }, [transformedTransactions, filters]);
+  const handleViewDetails = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowDetailsModal(true);
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchTransactions();
+    }
+  }, [isAuthenticated]);
+
+  const transformedTransactions = useMemo(() => transactions.map((txn) => ({
+    id: txn.id,
+    TransactionID: `TXN-${txn.id.toString().padStart(6, '0')}`,
+    Timestamp: txn.created_at,
+    TransactionType: txn.transaction_type,
+    Status: txn.status,
+    Amount: parseFloat(txn.amount),
+    Currency: getWalletCurrency(txn.wallet),
+    Direction: getTransactionDirection(txn),
+    user: txn.user,
+    agent: txn.agent,
+    admin: txn.admin,
+    wallet: txn.wallet,
+    recipient_wallet: txn.recipient_wallet,
+    note: txn.note,
+    created_at: txn.created_at,
+    updated_at: txn.updated_at,
+
+    SourceEntityID: getSourceEntity(txn),
+    TargetEntityID: getTargetEntity(txn),
+    FeeAmount: 0,
+  })), [transactions]);
+
+  const filteredData = useMemo(() => transformedTransactions.filter((txn) => {
+    if (filters.currency !== 'All' && txn.Currency !== filters.currency) return false;
+    if (filters.status !== 'All' && txn.Status !== filters.status) return false;
+    if (filters.type !== 'All' && txn.TransactionType !== filters.type) return false;
+
+    if (filters.startDate && new Date(txn.Timestamp) < new Date(filters.startDate)) return false;
+    if (filters.endDate && new Date(txn.Timestamp) > new Date(`${filters.endDate}T23:59:59`)) return false;
+
+    return true;
+  }), [transformedTransactions, filters]);
 
   const stats = useMemo(() => {
     const totalTransactions = filteredData.length;
-    const completedTransactions = filteredData.filter(t => t.Status === 'approved').length;
-    const pendingTransactions = filteredData.filter(t => t.Status === 'pending').length;
-    const rejectedTransactions = filteredData.filter(t => t.Status === 'rejected').length;
+    const completedTransactions = filteredData.filter((t) => t.Status === 'approved').length;
+    const pendingTransactions = filteredData.filter((t) => t.Status === 'pending').length;
+    const rejectedTransactions = filteredData.filter((t) => t.Status === 'rejected').length;
 
     const inflowUSD = filteredData
       .filter((t) => t.Direction === 'Inflow' && t.Status === 'approved' && t.Currency === 'USD')
@@ -159,14 +155,14 @@ const Transactions = () => {
       .filter((t) => t.Direction === 'Outflow' && t.Status === 'approved' && t.Currency === 'SYP')
       .reduce((sum, t) => sum + t.Amount, 0);
 
-    return { 
-      totalTransactions, 
+    return {
+      totalTransactions,
       completedTransactions,
       pendingTransactions,
       rejectedTransactions,
-      inflowUSD, 
-      outflowUSD, 
-      inflowSYP, 
+      inflowUSD,
+      outflowUSD,
+      inflowSYP,
       outflowSYP,
     };
   }, [filteredData]);
@@ -210,10 +206,10 @@ const Transactions = () => {
 
   const entityTemplate = (props, field) => {
     const entity = props[field];
-    
+
     let icon = '👤';
-    let text = entity || 'Unknown';
-    
+    const text = entity || 'Unknown';
+
     if (field === 'SourceEntityID') {
       icon = props.agent ? '🤵' : '👤';
     } else if (field === 'TargetEntityID') {
@@ -240,15 +236,15 @@ const Transactions = () => {
 
   const typeTemplate = (props) => {
     const typeIcons = {
-      'deposit': '💰',
-      'transfer': '🔄',
-      'purchase': '🛒',
+      deposit: '💰',
+      transfer: '🔄',
+      purchase: '🛒',
     };
 
     const typeTexts = {
-      'deposit': 'Deposit',
-      'transfer': 'Transfer',
-      'purchase': 'Purchase',
+      deposit: 'Deposit',
+      transfer: 'Transfer',
+      purchase: 'Purchase',
     };
 
     return (
@@ -265,14 +261,14 @@ const Transactions = () => {
     try {
       setActionLoading(transactionId);
       await axiosInstance.post(`transactions/approve/${transactionId}/`, {
-        action: 'approve'
+        action: 'approve',
       });
 
-      await fetchTransactions(); // Refresh the list
+      await fetchTransactions();
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          err.response?.data?.error || 
-                          'Failed to approve transaction';
+      const errorMessage = err.response?.data?.detail
+        || err.response?.data?.error
+        || 'Failed to approve transaction';
       alert(`Error: ${errorMessage}`);
       console.error('Error approving transaction:', err);
     } finally {
@@ -288,14 +284,14 @@ const Transactions = () => {
       setActionLoading(transactionId);
       await axiosInstance.post(`transactions/approve/${transactionId}/`, {
         action: 'reject',
-        reason: reason
+        reason,
       });
 
-      await fetchTransactions(); // Refresh the list
+      await fetchTransactions();
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          err.response?.data?.error || 
-                          'Failed to reject transaction';
+      const errorMessage = err.response?.data?.detail
+        || err.response?.data?.error
+        || 'Failed to reject transaction';
       alert(`Error: ${errorMessage}`);
       console.error('Error rejecting transaction:', err);
     } finally {
@@ -306,6 +302,7 @@ const Transactions = () => {
   const actionsTemplate = (props) => (
     <div className="flex gap-2 justify-center">
       <button
+        type="button"
         className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-xs font-medium flex items-center gap-1 disabled:opacity-50"
         onClick={() => handleViewDetails(props)}
         title="View transaction details"
@@ -316,6 +313,7 @@ const Transactions = () => {
       {props.Status === 'pending' && user?.role === 'admin' && (
         <>
           <button
+            type="button"
             className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-xs font-medium flex items-center gap-1 disabled:opacity-50"
             onClick={() => handleApproveTransaction(props.id)}
             title="Approve transaction"
@@ -324,6 +322,7 @@ const Transactions = () => {
             {actionLoading === props.id ? '⏳' : '✅'} Approve
           </button>
           <button
+            type="button"
             className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs font-medium flex items-center gap-1 disabled:opacity-50"
             onClick={() => handleRejectTransaction(props.id)}
             title="Reject transaction"
@@ -336,11 +335,6 @@ const Transactions = () => {
     </div>
   );
 
-  const handleViewDetails = (transaction) => {
-    setSelectedTransaction(transaction);
-    setShowDetailsModal(true);
-  };
-
   const clearFilters = () => {
     setFilters({
       currency: 'All',
@@ -352,21 +346,20 @@ const Transactions = () => {
   };
 
   const handleExport = () => {
-    // Simple export to CSV
     const headers = ['Transaction ID', 'Date', 'Type', 'Amount', 'Currency', 'Status', 'User'];
-    const csvData = filteredData.map(txn => [
+    const csvData = filteredData.map((txn) => [
       txn.TransactionID,
       new Date(txn.Timestamp).toLocaleString(),
       txn.TransactionType,
       txn.Amount,
       txn.Currency,
       txn.Status,
-      txn.user?.name || 'N/A'
+      txn.user?.name || 'N/A',
     ]);
 
     const csvContent = [
       headers.join(','),
-      ...csvData.map(row => row.join(','))
+      ...csvData.map((row) => row.join(',')),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -396,6 +389,7 @@ const Transactions = () => {
         <div className="flex flex-col justify-center items-center h-64">
           <div className="text-red-500 text-xl mb-4">Error: {error}</div>
           <button
+            type="button"
             onClick={fetchTransactions}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
           >
@@ -408,12 +402,11 @@ const Transactions = () => {
 
   return (
     <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white dark:bg-secondary-dark-bg rounded-3xl">
-      <Header 
-        category="Financial Management" 
-        title="Transactions Ledger" 
+      <Header
+        category="Financial Management"
+        title="Transactions Ledger"
       />
 
-      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-blue-800 font-semibold text-sm">Total Transactions</p>
@@ -447,18 +440,19 @@ const Transactions = () => {
         </div>
       </div>
 
-      {/* Filters Section */}
       <div className="bg-gray-50 rounded-lg p-4 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-semibold text-gray-800">Filter Transactions</h3>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={handleExport}
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm font-medium flex items-center gap-2"
             >
               📊 Export CSV
             </button>
             <button
+              type="button"
               onClick={clearFilters}
               className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-sm font-medium flex items-center gap-2"
             >
@@ -466,71 +460,7 @@ const Transactions = () => {
             </button>
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-            <select
-              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={filters.currency}
-              onChange={(e) => setFilters({ ...filters, currency: e.target.value })}
-            >
-              <option value="All">All Currencies</option>
-              <option value="USD">USD ($)</option>
-              <option value="SYP">SYP (Lira)</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select
-              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            >
-              <option value="All">All Statuses</option>
-              <option value="approved">Approved</option>
-              <option value="pending">Pending</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-            <select
-              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={filters.type}
-              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-            >
-              <option value="All">All Types</option>
-              <option value="deposit">Deposit</option>
-              <option value="transfer">Transfer</option>
-              <option value="purchase">Purchase</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-            <input
-              type="date"
-              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-            <input
-              type="date"
-              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-            />
-          </div>
-        </div>
-        
-        {/* Active Filters Display */}
+
         <div className="flex flex-wrap gap-2 mt-3">
           {filters.currency !== 'All' && (
             <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
@@ -560,87 +490,86 @@ const Transactions = () => {
         </div>
       </div>
 
-      {/* Transactions Grid */}
       <GridComponent
         dataSource={filteredData}
-        allowPaging={true}
-        allowSorting={true}
-        allowFiltering={true}
-        allowGrouping={true}
+        allowPaging
+        allowSorting
+        allowFiltering
+        allowGrouping
         toolbar={toolbarOptions}
         pageSettings={{ pageSize: 15 }}
         height={500}
-        enableHover={true}
+        enableHover
       >
         <ColumnsDirective>
-          <ColumnDirective 
-            field="TransactionID" 
-            headerText="Txn ID" 
-            width="120" 
-            textAlign="Center" 
+          <ColumnDirective
+            field="TransactionID"
+            headerText="Txn ID"
+            width="120"
+            textAlign="Center"
           />
-          <ColumnDirective 
-            field="Timestamp" 
-            headerText="Date/Time" 
-            width="180" 
-            format={{ type: 'dateTime', format: 'dd/MM/yyyy HH:mm' }} 
+          <ColumnDirective
+            field="Timestamp"
+            headerText="Date/Time"
+            width="180"
+            format={{ type: 'dateTime', format: 'dd/MM/yyyy HH:mm' }}
           />
-          <ColumnDirective 
-            headerText="Type" 
-            width="160" 
+          <ColumnDirective
+            headerText="Type"
+            width="160"
             template={typeTemplate}
           />
-          <ColumnDirective 
-            headerText="Source" 
-            width="180" 
+          <ColumnDirective
+            headerText="Source"
+            width="180"
             template={sourceTemplate}
           />
-          <ColumnDirective 
-            headerText="Destination" 
-            width="180" 
+          <ColumnDirective
+            headerText="Destination"
+            width="180"
             template={targetTemplate}
           />
-          <ColumnDirective 
-            headerText="Amount" 
-            width="140" 
+          <ColumnDirective
+            headerText="Amount"
+            width="140"
             template={amountTemplate}
           />
-          <ColumnDirective 
-            field="Currency" 
-            headerText="Currency" 
-            width="100" 
-            textAlign="Center" 
+          <ColumnDirective
+            field="Currency"
+            headerText="Currency"
+            width="100"
+            textAlign="Center"
           />
-          <ColumnDirective 
-            headerText="Status" 
-            width="140" 
-            textAlign="Center" 
-            template={statusTemplate} 
+          <ColumnDirective
+            headerText="Status"
+            width="140"
+            textAlign="Center"
+            template={statusTemplate}
           />
-          <ColumnDirective 
-            headerText="Actions" 
-            width="200" 
-            textAlign="Center" 
-            template={actionsTemplate} 
+          <ColumnDirective
+            headerText="Actions"
+            width="200"
+            textAlign="Center"
+            template={actionsTemplate}
           />
         </ColumnsDirective>
         <Inject services={[Page, Toolbar, Sort, Filter, Group]} />
       </GridComponent>
 
-      {/* Transaction Details Modal */}
       {showDetailsModal && selectedTransaction && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Transaction Details</h2>
               <button
+                type="button"
                 onClick={() => setShowDetailsModal(false)}
                 className="text-gray-500 hover:text-gray-700 text-lg"
               >
                 ✕
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-800 mb-2">Basic Information</h3>
@@ -665,7 +594,7 @@ const Transactions = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-800 mb-2">Financial Details</h3>
                 <div className="space-y-2">
@@ -673,7 +602,8 @@ const Transactions = () => {
                     <span className="text-gray-600">Amount:</span>
                     <span className={`font-bold ${
                       selectedTransaction.Direction === 'Inflow' ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    }`}
+                    >
                       {selectedTransaction.Direction === 'Inflow' ? '+' : '-'}
                       {selectedTransaction.Currency === 'USD' ? '$' : 'SYP '}
                       {selectedTransaction.Amount.toLocaleString()}
@@ -690,7 +620,7 @@ const Transactions = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold text-gray-800 mb-2">Parties Involved</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -707,16 +637,17 @@ const Transactions = () => {
                 </div>
               </div>
             </div>
-            
+
             {selectedTransaction.note && (
               <div className="bg-yellow-50 p-4 rounded-lg mt-4">
                 <h3 className="font-semibold text-yellow-800 mb-2">Notes</h3>
                 <p className="text-sm text-yellow-700">{selectedTransaction.note}</p>
               </div>
             )}
-            
+
             <div className="flex justify-end gap-3 mt-6">
               <button
+                type="button"
                 onClick={() => setShowDetailsModal(false)}
                 className="px-6 py-2.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium"
               >

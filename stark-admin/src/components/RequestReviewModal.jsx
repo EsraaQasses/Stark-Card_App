@@ -8,7 +8,7 @@ const RequestReviewModal = ({ request, onClose }) => {
     if (!decision && !notes) {
       if (!window.confirm('Approve without adding notes?')) return;
     }
-    
+
     console.log(`Approving request ${request.RequestID}`, { decision, notes });
     alert(`Request ${request.RequestID} Approved ✅\n\nDecision: ${decision || 'No notes added'}`);
     onClose();
@@ -19,7 +19,7 @@ const RequestReviewModal = ({ request, onClose }) => {
       alert('Please provide a reason for rejection');
       return;
     }
-    
+
     console.log(`Rejecting request ${request.RequestID}`, { decision, notes });
     alert(`Request ${request.RequestID} Rejected ❌\n\nReason: ${decision}`);
     onClose();
@@ -37,6 +37,7 @@ const RequestReviewModal = ({ request, onClose }) => {
             Review Request {request.RequestID}
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
           >
@@ -97,7 +98,8 @@ const RequestReviewModal = ({ request, onClose }) => {
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Decision Notes / Reason:
+            Decision Notes / Reason
+            :
           </label>
           <textarea
             value={decision}
@@ -109,7 +111,8 @@ const RequestReviewModal = ({ request, onClose }) => {
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Additional Notes (Optional):
+            Additional Notes (Optional)
+            :
           </label>
           <textarea
             value={notes}
@@ -121,20 +124,23 @@ const RequestReviewModal = ({ request, onClose }) => {
 
         <div className="flex justify-between items-center">
           <button
+            type="button"
             onClick={handleRequestInfo}
             className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
           >
             View Full Details
           </button>
-          
+
           <div className="flex gap-3">
             <button
+              type="button"
               onClick={handleReject}
               className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
             >
               Reject Request
             </button>
             <button
+              type="button"
               onClick={handleApprove}
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
             >

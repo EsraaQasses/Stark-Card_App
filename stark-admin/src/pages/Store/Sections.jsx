@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   GridComponent,
   ColumnsDirective,
@@ -8,49 +8,43 @@ import {
   Toolbar,
   Sort,
   Filter,
-} from "@syncfusion/ej2-react-grids";
-import { Header } from "../../components";
-import axiosInstance from "../../utils/axiosConfig";
+} from '@syncfusion/ej2-react-grids';
+import { Header } from '../../components';
+import axiosInstance from '../../utils/axiosConfig';
 
 const StoreSections = () => {
   const [data, setData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sections, setSections] = useState([]); // For father section dropdown
+  const [sections, setSections] = useState([]);
   const [filters, setFilters] = useState({
-    status: 'All'
+    status: 'All',
   });
 
   const [newSection, setNewSection] = useState({
-    name_en: "",
-    name_ar: "",
-    description: "",
+    name_en: '',
+    name_ar: '',
+    description: '',
     image: null,
-    father_section: "",
+    father_section: '',
     is_active: true,
   });
 
-  const toolbarOptions = ["Search"];
+  const toolbarOptions = ['Search'];
 
-  // Fetch sections from backend
   const fetchSections = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get("store/admin/sections/");
-      console.log("Sections API Response:", response.data); // Debug log
-      
-      // Ensure data is an array
+      const response = await axiosInstance.get('store/admin/sections/');
       if (Array.isArray(response.data)) {
         setData(response.data);
         setSections(response.data);
       } else {
-        console.error("Expected array but got:", typeof response.data);
         setData([]);
       }
     } catch (error) {
-      console.error("Error fetching sections:", error);
-      alert("Failed to load sections");
+      alert('Failed to load sections');
     } finally {
       setLoading(false);
     }
@@ -60,37 +54,24 @@ const StoreSections = () => {
     fetchSections();
   }, []);
 
-  const filteredData = useMemo(() => {
-    return data.filter(section => {
-      if (filters.status !== 'All' && section.is_active !== (filters.status === 'Active')) return false;
-      return true;
-    });
-  }, [data, filters]);
-
-  const DebugData = () => (
-    <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-      <h3 className="font-bold mb-2">Debug Data ({data.length} items):</h3>
-      <pre className="text-xs">{JSON.stringify(data, null, 2)}</pre>
-    </div>
-  );
+  const filteredData = useMemo(() => data.filter((section) => {
+    if (filters.status !== 'All' && section.is_active !== (filters.status === 'Active')) return false;
+    return true;
+  }), [data, filters]);
 
   const stats = useMemo(() => {
     const totalSections = data.length;
-    const activeSections = data.filter(s => s.is_active).length;
+    const activeSections = data.filter((s) => s.is_active).length;
     const totalProducts = data.reduce((sum, section) => sum + (section.products_count || 0), 0);
-    const mainSections = data.filter(s => !s.father_section).length;
-    const subsections = data.filter(s => s.father_section).length;
+    const mainSections = data.filter((s) => !s.father_section).length;
+    const subsections = data.filter((s) => s.father_section).length;
 
     return { totalSections, activeSections, totalProducts, mainSections, subsections };
   }, [data]);
 
   const getImageUrl = (image) => {
     if (!image) return null;
-    
-    // If it's already a full URL, return it
     if (image.startsWith('http')) return image;
-    
-    // If it's a relative path, construct the full URL
     return `http://localhost:8000${image}`;
   };
 
@@ -106,7 +87,7 @@ const StoreSections = () => {
             alt={section.name_en}
             className="w-12 h-12 rounded-lg object-cover bg-gray-100 p-1"
             onError={(e) => {
-              e.target.src = "https://cdn-icons-png.flaticon.com/512/1170/1170679.png";
+              e.target.src = 'https://cdn-icons-png.flaticon.com/512/1170/1170679.png';
             }}
           />
         ) : (
@@ -115,10 +96,11 @@ const StoreSections = () => {
           </div>
         )}
         <span className={`text-xs mt-1 px-2 py-0.5 rounded-full ${
-          !section.father_section 
-            ? 'bg-purple-100 text-purple-700' 
+          !section.father_section
+            ? 'bg-purple-100 text-purple-700'
             : 'bg-blue-100 text-blue-700'
-        }`}>
+        }`}
+        >
           {!section.father_section ? 'Main' : 'Sub'}
         </span>
       </div>
@@ -132,11 +114,11 @@ const StoreSections = () => {
         <span
           className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
             section.is_active
-              ? "bg-green-100 text-green-800 border border-green-200"
-              : "bg-red-100 text-red-800 border border-red-200"
+              ? 'bg-green-100 text-green-800 border border-green-200'
+              : 'bg-red-100 text-red-800 border border-red-200'
           }`}
         >
-          {section.is_active ? "🟢 Active" : "🔴 Inactive"}
+          {section.is_active ? '🟢 Active' : '🔴 Inactive'}
         </span>
         <span className="text-xs text-gray-500">
           {section.products_count || 0} products
@@ -178,59 +160,14 @@ const StoreSections = () => {
     );
   };
 
-  const actionTemplate = (props) => {
-    const section = props;
-    return (
-      <div className="flex flex-col gap-2 justify-center">
-        <div className="flex gap-2">
-          <button 
-            onClick={() => handleEdit(section)}
-            className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-xs font-medium flex items-center gap-1"
-            title="Edit section"
-          >
-            ✏️ Edit
-          </button>
-          <button 
-            onClick={() => handleViewProducts(section.id)}
-            className="px-3 py-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition text-xs font-medium flex items-center gap-1"
-            title="View products"
-          >
-            📦 Products
-          </button>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => toggleStatus(section.id, section.is_active)}
-            className={`px-3 py-1.5 rounded-lg transition text-xs font-medium flex items-center gap-1 ${
-              section.is_active
-                ? "bg-yellow-500 hover:bg-yellow-600 text-white"
-                : "bg-green-500 hover:bg-green-600 text-white"
-            }`}
-            title={section.is_active ? "Deactivate section" : "Activate section"}
-          >
-            {section.is_active ? "⏸️ Hide" : "▶️ Show"}
-          </button>
-          <button
-            onClick={() => handleDelete(section.id, section.name_en)}
-            className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs font-medium flex items-center gap-1"
-            title="Delete section"
-          >
-            🗑️ Delete
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   const handleEdit = (section) => {
-    console.log("Editing section:", section);
     setEditingSection(section);
     setNewSection({
       name_en: section.name_en,
       name_ar: section.name_ar,
-      description: section.description || "",
-      image: null, // Reset image - user needs to re-select if they want to change
-      father_section: section.father_section || "",
+      description: section.description || '',
+      image: null,
+      father_section: section.father_section || '',
       is_active: section.is_active,
     });
     setIsModalOpen(true);
@@ -242,18 +179,15 @@ const StoreSections = () => {
 
   const toggleStatus = async (id, currentStatus) => {
     try {
-      const response = await axiosInstance.patch(`store/admin/sections/${id}/`, {
-        is_active: !currentStatus
+      await axiosInstance.patch(`store/admin/sections/${id}/`, {
+        is_active: !currentStatus,
       });
-      
-      setData(prev => prev.map(section => 
-        section.id === id ? { ...section, is_active: !currentStatus } : section
-      ));
-      
+
+      setData((prev) => prev.map((section) => (section.id === id ? { ...section, is_active: !currentStatus } : section)));
+
       alert(`Section ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
     } catch (error) {
-      console.error("Error updating section status:", error);
-      alert("Failed to update section status");
+      alert('Failed to update section status');
     }
   };
 
@@ -261,155 +195,147 @@ const StoreSections = () => {
     if (window.confirm(`Are you sure you want to delete "${title}"? This will also remove all products in this section.`)) {
       try {
         await axiosInstance.delete(`store/admin/sections/${id}/`);
-        setData(prev => prev.filter(s => s.id !== id));
-        alert("Section deleted successfully");
+        setData((prev) => prev.filter((s) => s.id !== id));
+        alert('Section deleted successfully');
       } catch (error) {
-        console.error("Error deleting section:", error);
-        alert("Failed to delete section");
+        alert('Failed to delete section');
       }
     }
   };
 
-  // FIX: Define handleImageChange function
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    console.log("🖼️ File selected:", file);
-    
+
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         alert('Please select an image file (JPEG, PNG, etc.)');
-        e.target.value = ''; // Clear the input
+        e.target.value = '';
         return;
       }
-      
-      // Validate file size (max 5MB)
+
       if (file.size > 5 * 1024 * 1024) {
         alert('Image size should be less than 5MB');
-        e.target.value = ''; // Clear the input
+        e.target.value = '';
         return;
       }
-      
+
       setNewSection({ ...newSection, image: file });
-      console.log("✅ Image set in state:", file.name);
     } else {
-      console.log("❌ No file selected");
       setNewSection({ ...newSection, image: null });
     }
   };
 
   const handleSaveSection = async (e) => {
-  e.preventDefault();
-  
-  try {
-    const formData = new FormData();
-    
-    // Add all fields to FormData
-    formData.append('name_en', newSection.name_en);
-    formData.append('name_ar', newSection.name_ar);
-    formData.append('description', newSection.description);
-    formData.append('is_active', newSection.is_active.toString());
-    
-    if (newSection.father_section) {
-      formData.append('father_section', newSection.father_section);
-    }
-    
-    // DEBUG: Check the image object thoroughly
-    console.log("🔍 Image object details:", {
-      image: newSection.image,
-      isFile: newSection.image instanceof File,
-      constructor: newSection.image?.constructor?.name,
-      prototype: Object.getPrototypeOf(newSection.image)?.constructor?.name,
-      hasName: 'name' in newSection.image,
-      hasType: 'type' in newSection.image,
-      hasSize: 'size' in newSection.image
-    });
+    e.preventDefault();
 
-    // Handle image - only append if it's a File
-    if (newSection.image instanceof File) {
-      console.log("✅ Adding image file to FormData:", newSection.image.name);
-      formData.append('image', newSection.image);
-      
-      // Verify the image is properly added to FormData
-      const imageFromFormData = formData.get('image');
-      console.log("📸 Image from FormData:", {
-        isFile: imageFromFormData instanceof File,
-        name: imageFromFormData?.name,
-        type: imageFromFormData?.type,
-        size: imageFromFormData?.size
-      });
-    } else {
-      console.log("❌ No valid image file to add");
-    }
+    try {
+      const formData = new FormData();
 
-    // DEBUG: Log all FormData entries in detail
-    console.log("📦 FormData entries:");
-    for (let [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`  ${key}: File(${value.name}, ${value.type}, ${value.size} bytes)`);
-      } else {
-        console.log(`  ${key}: ${value} (type: ${typeof value})`);
+      formData.append('name_en', newSection.name_en);
+      formData.append('name_ar', newSection.name_ar);
+      formData.append('description', newSection.description);
+      formData.append('is_active', newSection.is_active.toString());
+
+      if (newSection.father_section) {
+        formData.append('father_section', newSection.father_section);
       }
-    }
 
-    let response;
-    const config = {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      transformRequest: (data) => data, // Prevent axios from transforming FormData
-    };
+      if (newSection.image instanceof File) {
+        formData.append('image', newSection.image);
+      }
 
-    if (editingSection) {
-      console.log(`🔄 Updating section ${editingSection.id}`);
-      response = await axiosInstance.patch(
-        `store/admin/sections/${editingSection.id}/`,
-        formData,
-        config
-      );
-    } else {
-      console.log("🆕 Creating new section");
-      response = await axiosInstance.post(
-        "store/admin/sections/",
-        formData,
-        config
-      );
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        transformRequest: (data) => data,
+      };
+
+      let response;
+      if (editingSection) {
+        response = await axiosInstance.patch(
+          `store/admin/sections/${editingSection.id}/`,
+          formData,
+          config,
+        );
+      } else {
+        response = await axiosInstance.post(
+          'store/admin/sections/',
+          formData,
+          config,
+        );
+      }
+
+      if (editingSection) {
+        setData((prev) => prev.map((section) => (section.id === editingSection.id ? response.data : section)));
+      } else {
+        setData((prev) => [...prev, response.data]);
+      }
+
+      alert('Section saved successfully!');
+      closeModal();
+      fetchSections();
+    } catch (error) {
+      const errorMessage = error.response?.data || 'Failed to save section';
+      alert(`Error: ${JSON.stringify(errorMessage)}`);
     }
-    
-    console.log("✅ API Response:", response.data);
-    
-    // Update local state
-    if (editingSection) {
-      setData(prev => prev.map(section => 
-        section.id === editingSection.id ? response.data : section
-      ));
-    } else {
-      setData(prev => [...prev, response.data]);
-    }
-    
-    alert("Section saved successfully!");
-    closeModal();
-    fetchSections();
-  } catch (error) {
-    console.error("❌ Error saving section:", error);
-    console.error("❌ Error response data:", error.response?.data);
-    console.error("❌ Error response status:", error.response?.status);
-    console.error("❌ Error response headers:", error.response?.headers);
-    const errorMessage = error.response?.data || "Failed to save section";
-    alert(`Error: ${JSON.stringify(errorMessage)}`);
-  }
-};
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingSection(null);
     setNewSection({
-      name_en: "",
-      name_ar: "",
-      description: "",
+      name_en: '',
+      name_ar: '',
+      description: '',
       image: null,
-      father_section: "",
+      father_section: '',
       is_active: true,
     });
+  };
+
+  const actionTemplate = (props) => {
+    const section = props;
+    return (
+      <div className="flex flex-col gap-2 justify-center">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => handleEdit(section)}
+            className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-xs font-medium flex items-center gap-1"
+          >
+            ✏️ Edit
+          </button>
+          <button
+            type="button"
+            onClick={() => handleViewProducts(section.id)}
+            className="px-3 py-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition text-xs font-medium flex items-center gap-1"
+          >
+            📦 Products
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => toggleStatus(section.id, section.is_active)}
+            className={`px-3 py-1.5 rounded-lg transition text-xs font-medium flex items-center gap-1 ${
+              section.is_active
+                ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                : 'bg-green-500 hover:bg-green-600 text-white'
+            }`}
+          >
+            {section.is_active ? '⏸️ Hide' : '▶️ Show'}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDelete(section.id, section.name_en)}
+            className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs font-medium flex items-center gap-1"
+          >
+            🗑️ Delete
+          </button>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -467,6 +393,7 @@ const StoreSections = () => {
         </div>
 
         <button
+          type="button"
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium"
         >
@@ -519,8 +446,6 @@ const StoreSections = () => {
         </table>
       </div>
 
-      <DebugData />
-
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -529,6 +454,7 @@ const StoreSections = () => {
                 {editingSection ? 'Edit Store Section' : 'Add New Store Section'}
               </h2>
               <button
+                type="button"
                 onClick={closeModal}
                 className="text-gray-500 hover:text-gray-700 text-lg"
               >
@@ -545,9 +471,7 @@ const StoreSections = () => {
                   <input
                     type="text"
                     value={newSection.name_en}
-                    onChange={(e) =>
-                      setNewSection({ ...newSection, name_en: e.target.value })
-                    }
+                    onChange={(e) => setNewSection({ ...newSection, name_en: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                     placeholder="e.g., Mobile Gaming"
@@ -561,9 +485,7 @@ const StoreSections = () => {
                   <input
                     type="text"
                     value={newSection.name_ar}
-                    onChange={(e) =>
-                      setNewSection({ ...newSection, name_ar: e.target.value })
-                    }
+                    onChange={(e) => setNewSection({ ...newSection, name_ar: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                     placeholder="e.g., ألعاب الموبايل"
@@ -577,12 +499,10 @@ const StoreSections = () => {
                 </label>
                 <textarea
                   value={newSection.description}
-                  onChange={(e) =>
-                    setNewSection({
-                      ...newSection,
-                      description: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setNewSection({
+                    ...newSection,
+                    description: e.target.value,
+                  })}
                   className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows="3"
                   placeholder="Description of this section..."
@@ -596,38 +516,35 @@ const StoreSections = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageChange} // FIX: Now this function is defined
+                  onChange={handleImageChange}
                   className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {newSection.image ? 
-                    `Selected: ${newSection.image.name}` : 
-                    editingSection?.image ? 'Current image will be kept' : 'No file selected'
-                  }
+                  {newSection.image
+                    ? `Selected: ${newSection.image.name}`
+                    : editingSection?.image ? 'Current image will be kept' : 'No file selected'}
                 </p>
-                
-                {/* Show preview if image is selected */}
+
                 {newSection.image instanceof File && (
                   <div className="mt-2">
                     <p className="text-xs text-green-600 mb-1">Preview:</p>
-                    <img 
-                      src={URL.createObjectURL(newSection.image)} 
-                      alt="Preview" 
+                    <img
+                      src={URL.createObjectURL(newSection.image)}
+                      alt="Preview"
                       className="w-16 h-16 object-cover rounded border"
                     />
                   </div>
                 )}
-                
-                {/* Show current image when editing */}
+
                 {editingSection && editingSection.image && !newSection.image && (
                   <div className="mt-2">
                     <p className="text-xs text-blue-600 mb-1">Current Image:</p>
-                    <img 
-                      src={getImageUrl(editingSection.image)} 
-                      alt="Current" 
+                    <img
+                      src={getImageUrl(editingSection.image)}
+                      alt="Current"
                       className="w-16 h-16 object-cover rounded border"
                       onError={(e) => {
-                        e.target.src = "https://cdn-icons-png.flaticon.com/512/1170/1170679.png";
+                        e.target.src = 'https://cdn-icons-png.flaticon.com/512/1170/1170679.png';
                       }}
                     />
                   </div>
@@ -640,20 +557,17 @@ const StoreSections = () => {
                 </label>
                 <select
                   value={newSection.father_section}
-                  onChange={(e) =>
-                    setNewSection({ ...newSection, father_section: e.target.value })
-                  }
+                  onChange={(e) => setNewSection({ ...newSection, father_section: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Main Section (No Parent)</option>
                   {sections
-                    .filter(section => !section.father_section) // Only main sections can be parents
-                    .map(section => (
+                    .filter((section) => !section.father_section)
+                    .map((section) => (
                       <option key={section.id} value={section.id}>
                         {section.name_en}
                       </option>
-                    ))
-                  }
+                    ))}
                 </select>
               </div>
 
@@ -661,15 +575,12 @@ const StoreSections = () => {
                 <input
                   type="checkbox"
                   id="is_active"
-                  checked={newSection.is_active === true} // Ensure it's boolean true
-                  onChange={(e) => {
-                    console.log("Checkbox changed:", e.target.checked);
-                    setNewSection({ ...newSection, is_active: e.target.checked });
-                  }}
+                  checked={newSection.is_active}
+                  onChange={(e) => setNewSection({ ...newSection, is_active: e.target.checked })}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                  Active (Visible to users in the store) - Current: {newSection.is_active ? 'YES' : 'NO'}
+                  Active (Visible to users in the store)
                 </label>
               </div>
 

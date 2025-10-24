@@ -6,7 +6,8 @@ from .views import (
     ban_user, unban_user, list_users, promote_to_sub_admin, user_list, user_stats,
     simple_user_list, make_user_agent, AdminStep1LoginView, AdminStep2LoginView, 
     AdminStep3LoginView, SetupSecondPasswordView, CheckSecondPasswordSetupView,make_user_admin, SetAdminSecondPasswordView, list_admin_users, 
-    admin_user_detail, remove_admin_role,FirstTimeSetupSecondPasswordView,debug_session
+    admin_user_detail, remove_admin_role,FirstTimeSetupSecondPasswordView,debug_session,
+    Check2FAStatusView, AdminProfileUpdateView, TwoFactorSetupView, TwoFactorVerifyView, TwoFactorDisableView, TwoFactorStatusView
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -43,11 +44,22 @@ urlpatterns = [
     path("admin-users/<int:user_id>/", admin_user_detail, name="admin_user_detail"),
     path("remove-admin/<int:user_id>/", remove_admin_role, name="remove_admin_role"),
     path("debug-session/", debug_session, name="debug-session"),
+    
     # User list endpoints
     path("users/", user_list, name="user-list"),
     path("users-simple/", simple_user_list, name="user-list-simple"),
     path("stats/", user_stats, name="user-stats"),
     path('setup-first-password/', FirstTimeSetupSecondPasswordView.as_view(), name='setup-first-password'),
+    
+    # 2FA endpoints
+    path('2fa/setup/', TwoFactorSetupView.as_view(), name='2fa-setup'),
+    path('2fa/verify/', TwoFactorVerifyView.as_view(), name='2fa-verify'),
+    path('2fa/disable/', TwoFactorDisableView.as_view(), name='2fa-disable'),
+    path('2fa/status/', TwoFactorStatusView.as_view(), name='2fa-status'),
+    
+    # Admin profile management
+    path("admin/profile/", AdminProfileUpdateView.as_view(), name="admin-profile-update"),
+    
     # Email verification
     path("verify-email/", verify_email, name="verify-email"),
     path("verify-email-token/", VerifyEmailView.as_view(), name="verify-email-token"),

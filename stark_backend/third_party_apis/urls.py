@@ -8,4 +8,5 @@ router.register(r'transactions', views.APITransactionViewSet, basename='apitrans
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('apis/', views.ThirdPartyAPIViewSet.as_view({'get': 'list'}), name='api-list-direct'),
 ]

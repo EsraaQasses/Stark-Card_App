@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   GridComponent,
   ColumnsDirective,
@@ -8,9 +8,9 @@ import {
   Toolbar,
   Sort,
   Filter,
-} from "@syncfusion/ej2-react-grids";
-import { Header } from "../../components";
-import axiosInstance from "../../utils/axiosConfig";
+} from '@syncfusion/ej2-react-grids';
+import { Header } from '../../components';
+import axiosInstance from '../../utils/axiosConfig';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
@@ -27,98 +27,83 @@ export default function ProductsPage() {
     product_type: 'All',
   });
 
-  // NEW STATES FOR API PRODUCTS
-  const [selectedApi, setSelectedApi] = useState("");
+  const [selectedApi, setSelectedApi] = useState('');
   const [apiProducts, setApiProducts] = useState([]);
   const [loadingApiProducts, setLoadingApiProducts] = useState(false);
   const [showApiProductsModal, setShowApiProductsModal] = useState(false);
   const [selectedApiProduct, setSelectedApiProduct] = useState(null);
 
   const [newProduct, setNewProduct] = useState({
-    name_en: "",
-    name_ar: "",
-    description_en: "",
-    description_ar: "",
-    section: "",
-    api_config: "",
-    external_product: "", // ADDED: Store external product ID
-    product_type: "amount_based",
-    currency: "USD",
+    name_en: '',
+    name_ar: '',
+    description_en: '',
+    description_ar: '',
+    section: '',
+    api_config: '',
+    external_product: '',
+    product_type: 'amount_based',
+    currency: 'USD',
     base_price: 0,
     min_amount: 0,
     max_amount: 0,
     min_amount_price: 0,
-    customization_options: "",
-    customization_prices: "",
+    customization_options: '',
+    customization_prices: '',
     image: null,
     is_active: true,
     requirements: [],
   });
 
   const [newRequirement, setNewRequirement] = useState({
-    field_name: "",
-    field_type: "text",
+    field_name: '',
+    field_type: 'text',
     is_required: true,
-    placeholder: "",
+    placeholder: '',
     order: 0,
   });
 
-  const toolbarOptions = ["Search"];
+  const toolbarOptions = ['Search'];
 
-  // NEW FUNCTION: Map API field types to our system - ADDED AT TOP LEVEL
   const mapApiFieldType = (apiType) => {
     const typeMap = {
-      'text': 'text',
-      'string': 'text',
-      'number': 'number',
-      'integer': 'number',
-      'email': 'email',
-      'phone': 'phone',
-      'tel': 'phone',
-      'id': 'id',
-      'identifier': 'id'
+      text: 'text',
+      string: 'text',
+      number: 'number',
+      integer: 'number',
+      email: 'email',
+      phone: 'phone',
+      tel: 'phone',
+      id: 'id',
+      identifier: 'id',
     };
     return typeMap[apiType?.toLowerCase()] || 'text';
   };
 
-  // Fetch data from backend
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      // Fetch products
-      const productsResponse = await axiosInstance.get("store/admin/products/");
-      console.log("Products API Response:", productsResponse.data);
+
+      const productsResponse = await axiosInstance.get('store/admin/products/');
       setProducts(Array.isArray(productsResponse.data) ? productsResponse.data : []);
-      
-      // Fetch sections for dropdown
-      const sectionsResponse = await axiosInstance.get("store/admin/sections/");
-      console.log("Sections API Response:", sectionsResponse.data);
+
+      const sectionsResponse = await axiosInstance.get('store/admin/sections/');
       setSections(Array.isArray(sectionsResponse.data) ? sectionsResponse.data : []);
-      
-      // Fetch APIs for dropdown - handle different response formats
+
       try {
-        const apisResponse = await axiosInstance.get("third_party_apis/apis/");
-        console.log("APIs API Response:", apisResponse.data);
+        const apisResponse = await axiosInstance.get('third_party_apis/apis/');
         setApis(apisResponse.data?.results || apisResponse.data || []);
       } catch (apiError) {
-        console.warn("Could not fetch APIs:", apiError);
         setApis([]);
       }
-      
-      // Fetch external products for sync - handle different response formats
+
       try {
-        const externalResponse = await axiosInstance.get("store/admin/external-products/");
-        console.log("External Products API Response:", externalResponse.data);
+        const externalResponse = await axiosInstance.get('store/admin/external-products/');
         setExternalProducts(externalResponse.data?.results || externalResponse.data || []);
       } catch (externalError) {
-        console.warn("Could not fetch external products:", externalError);
         setExternalProducts([]);
       }
-      
     } catch (error) {
-      console.error("Error fetching data:", error);
-      alert("Failed to load data");
+      alert('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -128,7 +113,6 @@ export default function ProductsPage() {
     fetchData();
   }, []);
 
-  // NEW FUNCTION: Fetch API products when API is selected
   const fetchApiProducts = async (apiId) => {
     if (!apiId) {
       setApiProducts([]);
@@ -137,43 +121,33 @@ export default function ProductsPage() {
 
     try {
       setLoadingApiProducts(true);
-      console.log(`Fetching products for API: ${apiId}`);
-      
-      // First, try to sync products from the API
+
       try {
-        const syncResponse = await axiosInstance.post(`third_party_apis/apis/${apiId}/sync_products/`);
-        console.log("Sync response:", syncResponse.data);
-      } catch (syncError) {
-        console.warn("Sync failed, but continuing:", syncError);
-      }
-      
-      // Then fetch external products for this API
-      const response = await axiosInstance.get("store/admin/external-products/", {
-        params: { api_id: apiId }
+        await axiosInstance.post(`third_party_apis/apis/${apiId}/sync_products/`);
+      } catch (syncError) {}
+
+      const response = await axiosInstance.get('store/admin/external-products/', {
+        params: { api_id: apiId },
       });
-      
+
       const productsData = response.data?.results || response.data || [];
-      console.log(`Found ${productsData.length} API products:`, productsData);
       setApiProducts(productsData);
-      
     } catch (error) {
-      console.error("Error fetching API products:", error);
-      alert("Failed to load API products");
+      alert('Failed to load API products');
       setApiProducts([]);
     } finally {
       setLoadingApiProducts(false);
     }
   };
 
-  // NEW FUNCTION: Handle API selection change
   const handleApiChange = (apiId) => {
     setSelectedApi(apiId);
-    setNewProduct(prev => ({ 
-      ...prev, 
+    setNewProduct((prev) => ({
+      ...prev,
       api_config: apiId,
-      external_product: "" // Reset when API changes
+      external_product: '',
     }));
-    
+
     if (apiId) {
       fetchApiProducts(apiId);
       setShowApiProductsModal(true);
@@ -183,77 +157,68 @@ export default function ProductsPage() {
     }
   };
 
-  // NEW FUNCTION: Select API product and auto-fill fields - FIXED
   const handleSelectApiProduct = (apiProduct) => {
-    console.log("Selected API product:", apiProduct);
     setSelectedApiProduct(apiProduct);
-    
-    // Auto-fill product fields based on API product - FIXED: use mapApiFieldType directly
-    setNewProduct(prev => ({
+
+    setNewProduct((prev) => ({
       ...prev,
       name_en: apiProduct.name || prev.name_en,
-      name_ar: apiProduct.name || prev.name_ar, // Use same name if Arabic not available
+      name_ar: apiProduct.name || prev.name_ar,
       description_en: apiProduct.description || prev.description_en,
       description_ar: apiProduct.description || prev.description_ar,
       base_price: parseFloat(apiProduct.base_price) || prev.base_price,
-      external_product: apiProduct.id, // Store the external product ID
-      // Auto-create requirements from API product fields - FIXED: use mapApiFieldType function
+      external_product: apiProduct.id,
       requirements: apiProduct.required_fields_json?.map((field, index) => {
         const fieldData = typeof field === 'object' ? field : { name: field, type: 'text', required: true };
         return {
           field_name: fieldData.name || `field_${index}`,
-          field_type: mapApiFieldType(fieldData.type) || 'text', // FIXED: Use the function directly
+          field_type: mapApiFieldType(fieldData.type) || 'text',
           is_required: fieldData.required !== false,
           placeholder: fieldData.placeholder || '',
-          order: index
+          order: index,
         };
-      }) || prev.requirements
+      }) || prev.requirements,
     }));
-    
+
     setShowApiProductsModal(false);
     alert(`Product "${apiProduct.name}" selected! Fields have been auto-filled.`);
   };
 
-  // NEW FUNCTION: Close API products modal
   const closeApiProductsModal = () => {
     setShowApiProductsModal(false);
     setSelectedApiProduct(null);
   };
 
-  // NEW FUNCTION: Clear API selection
   const handleClearApiSelection = () => {
-    setSelectedApi("");
+    setSelectedApi('');
     setSelectedApiProduct(null);
     setApiProducts([]);
-    setNewProduct(prev => ({
+    setNewProduct((prev) => ({
       ...prev,
-      api_config: "",
-      external_product: ""
+      api_config: '',
+      external_product: '',
     }));
   };
 
-  const filteredProducts = useMemo(() => {
-    return products.filter(product => {
-      if (filters.section !== 'All' && product.section !== parseInt(filters.section)) return false;
-      if (filters.status !== 'All' && product.is_active !== (filters.status === 'Active')) return false;
-      if (filters.currency !== 'All' && product.currency !== filters.currency) return false;
-      if (filters.product_type !== 'All' && product.product_type !== filters.product_type) return false;
-      return true;
-    });
-  }, [products, filters]);
+  const filteredProducts = useMemo(() => products.filter((product) => {
+    if (filters.section !== 'All' && product.section !== parseInt(filters.section)) return false;
+    if (filters.status !== 'All' && product.is_active !== (filters.status === 'Active')) return false;
+    if (filters.currency !== 'All' && product.currency !== filters.currency) return false;
+    if (filters.product_type !== 'All' && product.product_type !== filters.product_type) return false;
+    return true;
+  }), [products, filters]);
 
   const stats = useMemo(() => {
     const totalProducts = products.length;
-    const activeProducts = products.filter(p => p.is_active).length;
-    const usdProducts = products.filter(p => p.currency === 'USD').length;
-    const sypProducts = products.filter(p => p.currency === 'SYP').length;
-    const amountBased = products.filter(p => p.product_type === 'amount_based').length;
-    const customizationBased = products.filter(p => p.product_type === 'customization_based').length;
+    const activeProducts = products.filter((p) => p.is_active).length;
+    const usdProducts = products.filter((p) => p.currency === 'USD').length;
+    const sypProducts = products.filter((p) => p.currency === 'SYP').length;
+    const amountBased = products.filter((p) => p.product_type === 'amount_based').length;
+    const customizationBased = products.filter((p) => p.product_type === 'customization_based').length;
 
     return { totalProducts, activeProducts, usdProducts, sypProducts, amountBased, customizationBased };
   }, [products]);
 
-  // FIX: Add image template function
   const imageTemplate = (props) => {
     const product = props;
     const getImageUrl = (image) => {
@@ -272,7 +237,7 @@ export default function ProductsPage() {
             alt={product.name_en}
             className="w-12 h-12 rounded-lg object-cover bg-gray-100 p-1"
             onError={(e) => {
-              e.target.src = "https://cdn-icons-png.flaticon.com/512/1170/1170679.png";
+              e.target.src = 'https://cdn-icons-png.flaticon.com/512/1170/1170679.png';
             }}
           />
         ) : (
@@ -284,26 +249,25 @@ export default function ProductsPage() {
     );
   };
 
-  const statusTemplate = (props) => {
-    return (
-      <div className="flex items-center justify-center gap-2">
-        <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
-          props.is_active
-            ? "bg-green-100 text-green-800 border border-green-200"
-            : "bg-red-100 text-red-800 border border-red-200"
-        }`}>
-          {props.is_active ? "🟢 Active" : "🔴 Inactive"}
-        </span>
-      </div>
-    );
-  };
+  const statusTemplate = (props) => (
+    <div className="flex items-center justify-center gap-2">
+      <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+        props.is_active
+          ? 'bg-green-100 text-green-800 border border-green-200'
+          : 'bg-red-100 text-red-800 border border-red-200'
+      }`}
+      >
+        {props.is_active ? '🟢 Active' : '🔴 Inactive'}
+      </span>
+    </div>
+  );
 
   const priceTemplate = (props) => {
     const symbol = props.currency === 'USD' ? '$' : 'SYP ';
-    const price = props.currency === 'USD' ? 
-      parseFloat(props.base_price || 0).toFixed(2) : 
-      parseFloat(props.base_price || 0).toLocaleString();
-    
+    const price = props.currency === 'USD'
+      ? parseFloat(props.base_price || 0).toFixed(2)
+      : parseFloat(props.base_price || 0).toLocaleString();
+
     return (
       <div className="text-right">
         <div className="font-semibold text-gray-900">
@@ -322,7 +286,7 @@ export default function ProductsPage() {
   };
 
   const sectionTemplate = (props) => {
-    const section = sections.find(s => s.id === props.section);
+    const section = sections.find((s) => s.id === props.section);
     return (
       <div className="text-center">
         <div className="font-medium text-gray-900">
@@ -336,7 +300,7 @@ export default function ProductsPage() {
   };
 
   const apiTemplate = (props) => {
-    const api = apis.find(a => a.id === props.api_config);
+    const api = apis.find((a) => a.id === props.api_config);
     return (
       <div className="text-center">
         {api ? (
@@ -355,67 +319,25 @@ export default function ProductsPage() {
     );
   };
 
-  const actionsTemplate = (props) => (
-    <div className="flex flex-col gap-2 justify-center">
-      <div className="flex gap-2">
-        <button
-          className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-xs font-medium flex items-center gap-1"
-          onClick={() => handleEdit(props)}
-          title="Edit product"
-        >
-          ✏️ Edit
-        </button>
-        <button
-          className="px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition text-xs font-medium flex items-center gap-1"
-          onClick={() => handleRequirements(props.id)}
-          title="Manage requirements"
-        >
-          📋 Requirements
-        </button>
-      </div>
-      <div className="flex gap-2">
-        <button
-          className={`px-3 py-1.5 rounded-lg transition text-xs font-medium flex items-center gap-1 ${
-            props.is_active
-              ? "bg-yellow-500 hover:bg-yellow-600 text-white"
-              : "bg-green-500 hover:bg-green-600 text-white"
-          }`}
-          onClick={() => toggleStatus(props.id, props.is_active)}
-          title={props.is_active ? "Deactivate product" : "Activate product"}
-        >
-          {props.is_active ? "⏸️ Hide" : "▶️ Show"}
-        </button>
-        <button
-          className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs font-medium flex items-center gap-1"
-          onClick={() => handleDelete(props.id, props.name_en)}
-          title="Delete product"
-        >
-          🗑️ Delete
-        </button>
-      </div>
-    </div>
-  );
-
   const handleEdit = (product) => {
-    console.log("Editing product:", product);
     setEditingProduct(product);
     setNewProduct({
-      name_en: product.name_en || "",
-      name_ar: product.name_ar || "",
-      description_en: product.description_en || "",
-      description_ar: product.description_ar || "",
-      section: product.section || "",
-      api_config: product.api_config || "",
-      external_product: product.external_product || "", // ADDED
-      product_type: product.product_type || "amount_based",
-      currency: product.currency || "USD",
+      name_en: product.name_en || '',
+      name_ar: product.name_ar || '',
+      description_en: product.description_en || '',
+      description_ar: product.description_ar || '',
+      section: product.section || '',
+      api_config: product.api_config || '',
+      external_product: product.external_product || '',
+      product_type: product.product_type || 'amount_based',
+      currency: product.currency || 'USD',
       base_price: parseFloat(product.base_price) || 0,
       min_amount: parseFloat(product.min_amount) || 0,
       max_amount: parseFloat(product.max_amount) || 0,
       min_amount_price: parseFloat(product.min_amount_price) || 0,
-      customization_options: product.customization_options || "",
-      customization_prices: product.customization_prices || "",
-      image: null, // Reset image - user needs to re-select if they want to change
+      customization_options: product.customization_options || '',
+      customization_prices: product.customization_prices || '',
+      image: null,
       is_active: product.is_active !== undefined ? product.is_active : true,
       requirements: product.requirements || [],
     });
@@ -424,23 +346,19 @@ export default function ProductsPage() {
 
   const handleRequirements = (productId) => {
     alert(`Opening requirements management for product ${productId}`);
-    // You can implement a modal for requirements management here
   };
 
   const toggleStatus = async (id, currentStatus) => {
     try {
-      const response = await axiosInstance.patch(`store/admin/products/${id}/`, {
-        is_active: !currentStatus
+      await axiosInstance.patch(`store/admin/products/${id}/`, {
+        is_active: !currentStatus,
       });
-      
-      setProducts(prev => prev.map(product => 
-        product.id === id ? { ...product, is_active: !currentStatus } : product
-      ));
-      
+
+      setProducts((prev) => prev.map((product) => (product.id === id ? { ...product, is_active: !currentStatus } : product)));
+
       alert(`Product ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
     } catch (error) {
-      console.error("Error updating product status:", error);
-      alert("Failed to update product status");
+      alert('Failed to update product status');
     }
   };
 
@@ -448,79 +366,72 @@ export default function ProductsPage() {
     if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
       try {
         await axiosInstance.delete(`store/admin/products/${id}/`);
-        setProducts(prev => prev.filter(p => p.id !== id));
-        alert("Product deleted successfully");
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        alert('Product deleted successfully');
       } catch (error) {
-        console.error("Error deleting product:", error);
-        alert("Failed to delete product");
+        alert('Failed to delete product');
       }
     }
   };
 
   const handleAddRequirement = () => {
     if (!newRequirement.field_name.trim()) {
-      alert("Field name is required");
+      alert('Field name is required');
       return;
     }
-    
-    setNewProduct(prev => ({
+
+    setNewProduct((prev) => ({
       ...prev,
-      requirements: [...prev.requirements, { 
-        ...newRequirement, 
-        order: prev.requirements.length 
-      }]
+      requirements: [...prev.requirements, {
+        ...newRequirement,
+        order: prev.requirements.length,
+      }],
     }));
-    
+
     setNewRequirement({
-      field_name: "",
-      field_type: "text",
+      field_name: '',
+      field_type: 'text',
       is_required: true,
-      placeholder: "",
+      placeholder: '',
       order: 0,
     });
   };
 
   const handleRemoveRequirement = (index) => {
-    setNewProduct(prev => ({
+    setNewProduct((prev) => ({
       ...prev,
-      requirements: prev.requirements.filter((_, i) => i !== index)
+      requirements: prev.requirements.filter((_, i) => i !== index),
     }));
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    console.log("🖼️ File selected:", file);
-    
+
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         alert('Please select an image file (JPEG, PNG, etc.)');
-        e.target.value = ''; // Clear the input
+        e.target.value = '';
         return;
       }
-      
-      // Validate file size (max 5MB)
+
       if (file.size > 5 * 1024 * 1024) {
         alert('Image size should be less than 5MB');
-        e.target.value = ''; // Clear the input
+        e.target.value = '';
         return;
       }
-      
+
       setNewProduct({ ...newProduct, image: file });
-      console.log("✅ Image set in state:", file.name);
     } else {
-      console.log("❌ No file selected");
       setNewProduct({ ...newProduct, image: null });
     }
   };
 
   const handleSaveProduct = async (e) => {
     e.preventDefault();
-    
+
     try {
       const formData = new FormData();
-      
-      // Add basic fields
+
       formData.append('name_en', newProduct.name_en);
       formData.append('name_ar', newProduct.name_ar);
       formData.append('description_en', newProduct.description_en);
@@ -530,17 +441,15 @@ export default function ProductsPage() {
       formData.append('currency', newProduct.currency);
       formData.append('base_price', newProduct.base_price.toString());
       formData.append('is_active', newProduct.is_active.toString());
-      
+
       if (newProduct.api_config) {
         formData.append('api_config', newProduct.api_config);
       }
-      
-      // ADDED: Add external product ID if selected
+
       if (newProduct.external_product) {
         formData.append('external_product', newProduct.external_product);
       }
-      
-      // Add product type specific fields
+
       if (newProduct.product_type === 'amount_based') {
         formData.append('min_amount', newProduct.min_amount.toString());
         formData.append('max_amount', newProduct.max_amount.toString());
@@ -549,61 +458,42 @@ export default function ProductsPage() {
         formData.append('customization_options', newProduct.customization_options);
         formData.append('customization_prices', newProduct.customization_prices);
       }
-      
-      // Add image if selected
+
       if (newProduct.image instanceof File) {
-        console.log("📸 Adding image to FormData:", newProduct.image.name);
         formData.append('image', newProduct.image);
       }
-      
-      // Add requirements as JSON
+
       if (newProduct.requirements.length > 0) {
         formData.append('requirements', JSON.stringify(newProduct.requirements));
-      }
-
-      // DEBUG: Log FormData entries
-      console.log("📦 FormData entries:");
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: File(${value.name}, ${value.type}, ${value.size} bytes)`);
-        } else {
-          console.log(`  ${key}: ${value} (type: ${typeof value})`);
-        }
       }
 
       const config = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        transformRequest: (data) => data, // Prevent axios from transforming FormData
+        transformRequest: (data) => data,
       };
 
       let response;
       if (editingProduct) {
-        console.log(`🔄 Updating product ${editingProduct.id}`);
         response = await axiosInstance.put(
           `store/admin/products/${editingProduct.id}/`,
           formData,
-          config
+          config,
         );
       } else {
-        console.log("🆕 Creating new product");
         response = await axiosInstance.post(
-          "store/admin/products/",
+          'store/admin/products/',
           formData,
-          config
+          config,
         );
       }
-      
-      console.log("✅ API Response:", response.data);
-      alert("Product saved successfully!");
+
+      alert('Product saved successfully!');
       closeModal();
       fetchData();
     } catch (error) {
-      console.error("❌ Error saving product:", error);
-      console.error("❌ Error response data:", error.response?.data);
-      console.error("❌ Error response status:", error.response?.status);
-      const errorMessage = error.response?.data || "Failed to save product";
+      const errorMessage = error.response?.data || 'Failed to save product';
       alert(`Error: ${JSON.stringify(errorMessage)}`);
     }
   };
@@ -612,33 +502,33 @@ export default function ProductsPage() {
     setShowModal(false);
     setEditingProduct(null);
     setNewProduct({
-      name_en: "",
-      name_ar: "",
-      description_en: "",
-      description_ar: "",
-      section: "",
-      api_config: "",
-      external_product: "", // ADDED
-      product_type: "amount_based",
-      currency: "USD",
+      name_en: '',
+      name_ar: '',
+      description_en: '',
+      description_ar: '',
+      section: '',
+      api_config: '',
+      external_product: '',
+      product_type: 'amount_based',
+      currency: 'USD',
       base_price: 0,
       min_amount: 0,
       max_amount: 0,
       min_amount_price: 0,
-      customization_options: "",
-      customization_prices: "",
+      customization_options: '',
+      customization_prices: '',
       image: null,
       is_active: true,
       requirements: [],
     });
     setNewRequirement({
-      field_name: "",
-      field_type: "text",
+      field_name: '',
+      field_type: 'text',
       is_required: true,
-      placeholder: "",
+      placeholder: '',
       order: 0,
     });
-    setSelectedApi("");
+    setSelectedApi('');
     setApiProducts([]);
     setSelectedApiProduct(null);
   };
@@ -648,15 +538,48 @@ export default function ProductsPage() {
       section: 'All',
       status: 'All',
       currency: 'All',
-      product_type: 'All'
+      product_type: 'All',
     });
   };
 
-  // Add Debug component to see data
-  const DebugData = () => (
-    <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-      <h3 className="font-bold mb-2">Debug Data ({products.length} products):</h3>
-      <pre className="text-xs">{JSON.stringify(products.slice(0, 2), null, 2)}</pre>
+  const actionsTemplate = (props) => (
+    <div className="flex flex-col gap-2 justify-center">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => handleEdit(props)}
+          className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-xs font-medium flex items-center gap-1"
+        >
+          ✏️ Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => handleRequirements(props.id)}
+          className="px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition text-xs font-medium flex items-center gap-1"
+        >
+          📋 Requirements
+        </button>
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className={`px-3 py-1.5 rounded-lg transition text-xs font-medium flex items-center gap-1 ${
+            props.is_active
+              ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+              : 'bg-green-500 hover:bg-green-600 text-white'
+          }`}
+          onClick={() => toggleStatus(props.id, props.is_active)}
+        >
+          {props.is_active ? '⏸️ Hide' : '▶️ Show'}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleDelete(props.id, props.name_en)}
+          className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs font-medium flex items-center gap-1"
+        >
+          🗑️ Delete
+        </button>
+      </div>
     </div>
   );
 
@@ -712,7 +635,7 @@ export default function ProductsPage() {
               onChange={(e) => setFilters({ ...filters, section: e.target.value })}
             >
               <option value="All">All Sections</option>
-              {sections.map(section => (
+              {sections.map((section) => (
                 <option key={section.id} value={section.id}>
                   {section.name_en}
                 </option>
@@ -759,12 +682,14 @@ export default function ProductsPage() {
 
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={clearFilters}
             className="px-4 py-2.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium flex items-center gap-2"
           >
             🗑️ Clear Filters
           </button>
           <button
+            type="button"
             onClick={() => setShowModal(true)}
             className="px-4 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium flex items-center gap-2"
           >
@@ -836,9 +761,6 @@ export default function ProductsPage() {
         )}
       </div>
 
-      <DebugData />
-
-      {/* Main Product Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -847,6 +769,7 @@ export default function ProductsPage() {
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
               </h2>
               <button
+                type="button"
                 onClick={closeModal}
                 className="text-gray-500 hover:text-gray-700 text-lg"
               >
@@ -855,7 +778,6 @@ export default function ProductsPage() {
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-6">
-              {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -914,7 +836,6 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Section and API Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -927,7 +848,7 @@ export default function ProductsPage() {
                     required
                   >
                     <option value="">Select a section</option>
-                    {sections.map(section => (
+                    {sections.map((section) => (
                       <option key={section.id} value={section.id}>
                         {section.name_en} / {section.name_ar}
                       </option>
@@ -947,7 +868,7 @@ export default function ProductsPage() {
                         className="flex-1 border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="">No API</option>
-                        {apis.map(api => (
+                        {apis.map((api) => (
                           <option key={api.id} value={api.id}>
                             {api.name} ({api.provider})
                           </option>
@@ -958,14 +879,12 @@ export default function ProductsPage() {
                           type="button"
                           onClick={handleClearApiSelection}
                           className="px-3 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-                          title="Clear API selection"
                         >
                           ✕
                         </button>
                       )}
                     </div>
-                    
-                    {/* Show selected API product info */}
+
                     {selectedApiProduct && (
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                         <div className="flex items-center justify-between">
@@ -974,8 +893,8 @@ export default function ProductsPage() {
                               ✅ Connected to: {selectedApiProduct.name}
                             </p>
                             <p className="text-xs text-green-600">
-                              Base Price: ${selectedApiProduct.base_price} | 
-                              Provider: {selectedApiProduct.provider} | 
+                              Base Price: ${selectedApiProduct.base_price} |
+                              Provider: {selectedApiProduct.provider} |
                               ID: {selectedApiProduct.external_id}
                             </p>
                             {selectedApiProduct.required_fields_json?.length > 0 && (
@@ -995,7 +914,6 @@ export default function ProductsPage() {
                       </div>
                     )}
 
-                    {/* Show button to select API product if API is selected but no product chosen */}
                     {newProduct.api_config && !selectedApiProduct && (
                       <button
                         type="button"
@@ -1009,8 +927,6 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Rest of the form remains the same */}
-              {/* Product Type and Currency */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1043,7 +959,6 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Product Type Specific Fields */}
               {newProduct.product_type === 'amount_based' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50 rounded-lg">
                   <div>
@@ -1124,7 +1039,6 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              {/* Base Price */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Base Price *
@@ -1140,7 +1054,6 @@ export default function ProductsPage() {
                 />
               </div>
 
-              {/* Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Product Image
@@ -1154,39 +1067,36 @@ export default function ProductsPage() {
                 <p className="text-xs text-gray-500 mt-1">
                   {newProduct.image ? `Selected: ${newProduct.image.name}` : 'No file selected'}
                 </p>
-                
-                {/* Show preview if image is selected */}
+
                 {newProduct.image instanceof File && (
                   <div className="mt-2">
                     <p className="text-xs text-green-600 mb-1">Preview:</p>
-                    <img 
-                      src={URL.createObjectURL(newProduct.image)} 
-                      alt="Preview" 
+                    <img
+                      src={URL.createObjectURL(newProduct.image)}
+                      alt="Preview"
                       className="w-16 h-16 object-cover rounded border"
                     />
                   </div>
                 )}
-                
-                {/* Show current image when editing */}
+
                 {editingProduct && editingProduct.image && !newProduct.image && (
                   <div className="mt-2">
                     <p className="text-xs text-blue-600 mb-1">Current Image:</p>
-                    <img 
-                      src={`http://localhost:8000${editingProduct.image}`} 
-                      alt="Current" 
+                    <img
+                      src={`http://localhost:8000${editingProduct.image}`}
+                      alt="Current"
                       className="w-16 h-16 object-cover rounded border"
                       onError={(e) => {
-                        e.target.src = "https://cdn-icons-png.flaticon.com/512/1170/1170679.png";
+                        e.target.src = 'https://cdn-icons-png.flaticon.com/512/1170/1170679.png';
                       }}
                     />
                   </div>
                 )}
               </div>
 
-              {/* Requirements Management */}
               <div className="p-4 bg-gray-50 rounded-lg">
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Product Requirements</h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-3">
                   <input
                     type="text"
@@ -1261,7 +1171,6 @@ export default function ProductsPage() {
                 )}
               </div>
 
-              {/* Active Status */}
               <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
                 <input
                   type="checkbox"
@@ -1295,7 +1204,6 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* NEW: API Products Modal */}
       {showApiProductsModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -1304,6 +1212,7 @@ export default function ProductsPage() {
                 Select API Product
               </h2>
               <button
+                type="button"
                 onClick={closeApiProductsModal}
                 className="text-gray-500 hover:text-gray-700 text-lg"
               >
@@ -1339,13 +1248,13 @@ export default function ProductsPage() {
                         ${apiProduct.base_price}
                       </span>
                     </div>
-                    
+
                     {apiProduct.description && (
                       <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                         {apiProduct.description}
                       </p>
                     )}
-                    
+
                     {apiProduct.required_fields_json && apiProduct.required_fields_json.length > 0 && (
                       <div className="mt-2">
                         <p className="text-xs font-medium text-gray-700 mb-1">Required Fields:</p>
@@ -1354,8 +1263,8 @@ export default function ProductsPage() {
                             const fieldData = typeof field === 'object' ? field : { name: field, type: 'text', required: true };
                             return (
                               <div key={index} className="flex items-center text-xs text-gray-600">
-                                <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
-                                {fieldData.name} ({mapApiFieldType(fieldData.type)}) {/* FIXED: Use the function directly */}
+                                <span className="w-2 h-2 bg-gray-400 rounded-full mr-2" />
+                                {fieldData.name} ({mapApiFieldType(fieldData.type)})
                                 {fieldData.required && (
                                   <span className="ml-1 text-red-500">*</span>
                                 )}
@@ -1370,12 +1279,13 @@ export default function ProductsPage() {
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="mt-3 flex justify-between items-center">
                       <span className="text-xs text-gray-500 capitalize">
                         {apiProduct.category || 'Uncategorized'}
                       </span>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSelectApiProduct(apiProduct);
@@ -1396,6 +1306,7 @@ export default function ProductsPage() {
 
             <div className="flex justify-end gap-3 pt-4 border-t mt-4">
               <button
+                type="button"
                 onClick={closeApiProductsModal}
                 className="px-6 py-2.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium"
               >
@@ -1403,6 +1314,7 @@ export default function ProductsPage() {
               </button>
               {apiProducts.length > 0 && (
                 <button
+                  type="button"
                   onClick={() => {
                     if (apiProducts.length > 0) {
                       handleSelectApiProduct(apiProducts[0]);

@@ -50,26 +50,9 @@ class AdminStep2LoginSerializer(serializers.Serializer):
     session_token = serializers.CharField()
     second_password = serializers.CharField(write_only=True)
 
-    def validate_second_password(self, value):
-        # Validate second password requirements
-        if len(value) < getattr(settings, 'SECOND_PASSWORD_MIN_LENGTH', 8):
-            raise serializers.ValidationError(
-                f"Second password must be at least {getattr(settings, 'SECOND_PASSWORD_MIN_LENGTH', 8)} characters long"
-            )
-
-        if getattr(settings, 'SECOND_PASSWORD_REQUIRE_UPPERCASE', True) and not re.search(r'[A-Z]', value):
-            raise serializers.ValidationError("Second password must contain at least one uppercase letter")
-
-        if getattr(settings, 'SECOND_PASSWORD_REQUIRE_LOWERCASE', True) and not re.search(r'[a-z]', value):
-            raise serializers.ValidationError("Second password must contain at least one lowercase letter")
-
-        if getattr(settings, 'SECOND_PASSWORD_REQUIRE_NUMBERS', True) and not re.search(r'[0-9]', value):
-            raise serializers.ValidationError("Second password must contain at least one number")
-
-        if getattr(settings, 'SECOND_PASSWORD_REQUIRE_SYMBOLS', True) and not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
-            raise serializers.ValidationError("Second password must contain at least one special character")
-
-        return value
+    # *** NOTE: The validate_second_password method has been removed as requested ***
+    #           Password complexity rules should only be applied in the
+    #           SetupSecondPasswordSerializer.
 
     def validate(self, data):
         session_token = data["session_token"]
@@ -91,6 +74,7 @@ class AdminStep2LoginSerializer(serializers.Serializer):
         user = session.user
         
         if not hasattr(user, 'admin_security') or not user.admin_security.is_second_password_set:
+            # Note: This is a critical check for step 2.
             raise serializers.ValidationError("Second password not set up for this admin")
 
         if not user.admin_security.check_second_password(second_password):
@@ -103,73 +87,59 @@ class AdminStep2LoginSerializer(serializers.Serializer):
 # -------------------- Admin Step 3 Serializer --------------------
 class AdminStep3LoginSerializer(serializers.Serializer):
     session_token = serializers.CharField()
-    otp_code = serializers.CharField(max_length=6)
+    token = serializers.CharField(max_length=6)  # For both OTP and 2FA
 
     def validate(self, data):
         session_token = data["session_token"]
-        otp_code = data["otp_code"]
-
-        print(f"🔍 Step 3 Validation - Session: {session_token}, OTP: {otp_code}")
+        token = data["token"]
 
         try:
-            # First try the strict condition
             session = AdminLoginSession.objects.get(
                 session_token=session_token,
                 step_1_completed=True,
                 step_2_completed=True,
                 step_3_completed=False
             )
-            print(f"✅ Session found with strict conditions - User: {session.user.name}, OTP: {session.otp_code}")
-            
         except AdminLoginSession.DoesNotExist:
-            print("❌ Session not found with strict conditions - trying relaxed search...")
-            
-            # Try relaxed search - just find any active session with this token
-            try:
-                session = AdminLoginSession.objects.get(
-                    session_token=session_token,
-                    step_1_completed=True,
-                    step_2_completed=True
-                    # Don't check step_3_completed to be more flexible
-                )
-                print(f"✅ Session found with relaxed conditions - User: {session.user.name}, OTP: {session.otp_code}, Step3: {session.step_3_completed}")
-                
-            except AdminLoginSession.DoesNotExist:
-                print("❌ Session not found even with relaxed conditions")
-                # Debug: Check what sessions exist
-                try:
-                    all_sessions = AdminLoginSession.objects.filter(session_token=session_token)
-                    if all_sessions.exists():
-                        for s in all_sessions:
-                            print(f"🔍 Found session - Token: {s.session_token}, Step1: {s.step_1_completed}, Step2: {s.step_2_completed}, Step3: {s.step_3_completed}, OTP: {s.otp_code}")
-                    else:
-                        print("❌ No sessions found with this token at all")
-                except Exception as e:
-                    print(f"❌ Error checking sessions: {e}")
-                
-                raise serializers.ValidationError("Invalid or expired session")
+            raise serializers.ValidationError("Invalid or expired session")
 
         if session.is_expired():
-            print("❌ Session expired")
             session.delete()
             raise serializers.ValidationError("Session expired")
 
-        if not session.otp_code:
-            print("❌ No OTP code in session")
-            raise serializers.ValidationError("No OTP code generated for this session")
+        user = session.user
+        admin_security = user.admin_security
+        
+        # --- START CORE VALIDATION LOGIC ---
+        
+        # 1. Check for 2FA/TOTP first
+        if admin_security.is_2fa_enabled:
+            # Use TOTP 2FA (from django_otp or custom implementation)
+            if not admin_security.verify_totp(token):
+                raise serializers.ValidationError("Invalid 2FA token")
+        
+        # 2. Fallback to Email OTP if 2FA is NOT enabled but required by settings
+        elif getattr(settings, 'ADMIN_OTP_REQUIRED', True):
+            otp = OTPCode.objects.filter(
+                user=user, 
+                code=token, 
+                is_used=False
+            ).order_by('-created_at').first()
 
-        if session.otp_code != otp_code:
-            print(f"❌ OTP mismatch - Expected: {session.otp_code}, Got: {otp_code}")
-            raise serializers.ValidationError("Invalid OTP code")
+            # Validate OTP existence and expiry
+            otp_expiry_minutes = getattr(settings, 'ADMIN_OTP_EXPIRY_MINUTES', 5)
+            if not otp or timezone.now() > otp.created_at + timedelta(minutes=otp_expiry_minutes):
+                raise serializers.ValidationError(f"Invalid or expired OTP. Code expires in {otp_expiry_minutes} minutes.")
+            
+            # Mark OTP as used
+            otp.is_used = True
+            otp.save()
+        
 
-        # Use 5 minutes OTP expiry (matching your email template)
-        if timezone.now() > session.otp_created_at + timedelta(minutes=5):
-            print("❌ OTP expired")
-            raise serializers.ValidationError("OTP expired")
-
-        print("✅ OTP validation successful")
+        # --- END CORE VALIDATION LOGIC ---
+        
         data["session"] = session
-        data["user"] = session.user
+        data["user"] = user
         return data
 
 # -------------------- Setup Second Password Serializer --------------------
@@ -181,11 +151,28 @@ class SetupSecondPasswordSerializer(serializers.Serializer):
         if data['second_password'] != data['confirm_password']:
             raise serializers.ValidationError({"confirm_password": "Passwords don't match."})
         
-        # Apply the same validation as step 2
-        second_password_serializer = AdminStep2LoginSerializer(data={
-            'second_password': data['second_password']
-        })
-        second_password_serializer.is_valid(raise_exception=True)
+        # --- START Re-implemented Second Password Complexity Validation ---
+        value = data['second_password']
+        
+        if len(value) < getattr(settings, 'SECOND_PASSWORD_MIN_LENGTH', 8):
+            raise serializers.ValidationError(
+                f"Second password must be at least {getattr(settings, 'SECOND_PASSWORD_MIN_LENGTH', 8)} characters long"
+            )
+
+        if getattr(settings, 'SECOND_PASSWORD_REQUIRE_UPPERCASE', True) and not re.search(r'[A-Z]', value):
+            raise serializers.ValidationError("Second password must contain at least one uppercase letter")
+
+        if getattr(settings, 'SECOND_PASSWORD_REQUIRE_LOWERCASE', True) and not re.search(r'[a-z]', value):
+            raise serializers.ValidationError("Second password must contain at least one lowercase letter")
+
+        if getattr(settings, 'SECOND_PASSWORD_REQUIRE_NUMBERS', True) and not re.search(r'[0-9]', value):
+            raise serializers.ValidationError("Second password must contain at least one number")
+
+        # Note: You need to define the full symbol regex if you want to be stricter than just one symbol.
+        if getattr(settings, 'SECOND_PASSWORD_REQUIRE_SYMBOLS', True) and not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
+            raise serializers.ValidationError("Second password must contain at least one special character")
+        
+        # --- END Re-implemented Second Password Complexity Validation ---
         
         return data
 
@@ -251,6 +238,7 @@ class UserSerializer(serializers.ModelSerializer):
             wallets = Wallet.objects.filter(user=obj)
             balances = {}
             for wallet in wallets:
+                # FIX: Change 'balance' to 'total_balance'
                 balances[wallet.currency] = float(wallet.total_balance)
             return balances
         except Exception as e:
@@ -501,7 +489,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_balances(self, obj):
         wallets = Wallet.objects.filter(user=obj)
-        return {wallet.currency: float(wallet.balance) for wallet in wallets} if wallets else {}
+        # FIX: Change 'balance' to 'total_balance'
+        return {wallet.currency: float(wallet.total_balance) for wallet in wallets} if wallets else {}
 
     def get_avatar_url(self, obj):
         if obj.avatar:
@@ -566,4 +555,139 @@ class ResetPasswordSerializer(serializers.Serializer):
     def validate(self, data):
         if data['new_password'] != data['confirm_password']:
             raise serializers.ValidationError({"confirm_password": "Passwords don't match."})
+        return data
+    
+    
+# -------------------- Admin Profile Update Serializer --------------------
+class AdminProfileUpdateSerializer(serializers.ModelSerializer):
+    current_password = serializers.CharField(write_only=True, required=False)
+    new_password = serializers.CharField(write_only=True, required=False, min_length=6)
+    current_second_password = serializers.CharField(write_only=True, required=False)
+    new_second_password = serializers.CharField(write_only=True, required=False, min_length=8)
+    
+    class Meta:
+        model = User
+        fields = [
+            "full_name", "name", "email", "current_password", "new_password",
+            "current_second_password", "new_second_password"
+        ]
+
+    def validate(self, data):
+        user = self.instance
+        request = self.context.get('request')
+        
+        # Check if email is being changed and validate uniqueness
+        if 'email' in data and data['email'] != user.email:
+            if User.objects.filter(email=data['email']).exclude(id=user.id).exists():
+                raise serializers.ValidationError({"email": "This email is already taken."})
+
+        # Check if username is being changed and validate uniqueness
+        if 'name' in data and data['name'] != user.name:
+            if User.objects.filter(name=data['name']).exclude(id=user.id).exists():
+                raise serializers.ValidationError({"name": "This username is already taken."})
+
+        # Validate password change
+        if data.get('new_password'):
+            if not data.get('current_password'):
+                raise serializers.ValidationError({
+                    "current_password": "Current password is required to set a new password."
+                })
+            if not user.check_password(data['current_password']):
+                raise serializers.ValidationError({
+                    "current_password": "Current password is incorrect."
+                })
+
+        # Validate second password change
+        if data.get('new_second_password'):
+            if not data.get('current_second_password'):
+                raise serializers.ValidationError({
+                    "current_second_password": "Current second password is required to set a new second password."
+                })
+            
+            # Check if user has admin security setup
+            if not hasattr(user, 'admin_security') or not user.admin_security.is_second_password_set:
+                raise serializers.ValidationError({
+                    "current_second_password": "Second password is not set up for this account."
+                })
+            
+            if not user.admin_security.check_second_password(data['current_second_password']):
+                raise serializers.ValidationError({
+                    "current_second_password": "Current second password is incorrect."
+                })
+
+        return data
+
+    def update(self, instance, validated_data):
+        # Remove password fields from validated_data to handle separately
+        current_password = validated_data.pop('current_password', None)
+        new_password = validated_data.pop('new_password', None)
+        current_second_password = validated_data.pop('current_second_password', None)
+        new_second_password = validated_data.pop('new_second_password', None)
+
+        # Update basic profile fields
+        instance = super().update(instance, validated_data)
+
+        # Update main password if provided
+        if new_password:
+            instance.set_password(new_password)
+            instance.save()
+
+        # Update second password if provided
+        if new_second_password:
+            admin_security = instance.admin_security
+            admin_security.set_second_password(new_second_password)
+
+        return instance
+    
+    
+# -------------------- 2FA Setup Serializer --------------------
+class Setup2FASerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=6, min_length=6)
+
+    def validate(self, data):
+        user = self.context['request'].user
+        token = data['token']
+        
+        if not hasattr(user, 'admin_security'):
+            raise serializers.ValidationError("Admin security not set up")
+        
+        if not user.admin_security.verify_totp(token):
+            raise serializers.ValidationError("Invalid 2FA token")
+        
+        data['user'] = user
+        return data
+
+# -------------------- 2FA Verification Serializer --------------------
+class Verify2FASerializer(serializers.Serializer):
+    session_token = serializers.CharField()
+    token = serializers.CharField(max_length=6, min_length=6)
+
+    def validate(self, data):
+        session_token = data["session_token"]
+        token = data["token"]
+
+        try:
+            session = AdminLoginSession.objects.get(
+                session_token=session_token,
+                step_1_completed=True,
+                step_2_completed=True,
+                step_3_completed=False
+            )
+        except AdminLoginSession.DoesNotExist:
+            raise serializers.ValidationError("Invalid or expired session")
+
+        if session.is_expired():
+            session.delete()
+            raise serializers.ValidationError("Session expired")
+
+        user = session.user
+        
+        if not hasattr(user, 'admin_security') or not user.admin_security.is_2fa_enabled:
+            raise serializers.ValidationError("2FA not enabled for this account")
+
+        if not user.admin_security.verify_totp(token):
+            raise serializers.ValidationError("Invalid 2FA token")
+
+        data["session"] = session
+        data["user"] = user
         return data

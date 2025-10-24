@@ -23,20 +23,17 @@ const PaymentMethods = () => {
 
   const toolbarOptions = ['Search', 'Refresh'];
 
-  // Fetch payment methods from backend
   const fetchPaymentMethods = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await axiosInstance.get('/payment-methods/admin/payment-methods/');
-      
-      // Ensure we have an array, even if empty
+
       setMethods(Array.isArray(response.data) ? response.data : []);
-      
-    } catch (error) {
-      console.error('Error fetching payment methods:', error);
+    } catch (err) {
+      console.error('Error fetching payment methods:', err);
       setError('Failed to load payment methods');
-      setMethods([]); // Set empty array on error
+      setMethods([]);
     } finally {
       setLoading(false);
     }
@@ -46,11 +43,7 @@ const PaymentMethods = () => {
     fetchPaymentMethods();
   }, []);
 
-  const filteredMethods = methods.filter(method =>
-    method.title?.toLowerCase().includes(searchText.toLowerCase()) ||
-    method.currency?.toLowerCase().includes(searchText.toLowerCase()) ||
-    method.account_details?.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filteredMethods = methods.filter((method) => method.title?.toLowerCase().includes(searchText.toLowerCase()) || method.currency?.toLowerCase().includes(searchText.toLowerCase()) || method.account_details?.toLowerCase().includes(searchText.toLowerCase()));
 
   const iconTemplate = (props) => (
     <div className="flex flex-col items-center">
@@ -64,10 +57,11 @@ const PaymentMethods = () => {
       />
       {props.currency && (
         <span className={`text-xs mt-1 px-2 py-0.5 rounded-full ${
-          props.currency === 'usd' 
-            ? 'bg-green-100 text-green-700' 
+          props.currency === 'usd'
+            ? 'bg-green-100 text-green-700'
             : 'bg-blue-100 text-blue-700'
-        }`}>
+        }`}
+        >
           {props.currency.toUpperCase()}
         </span>
       )}
@@ -86,7 +80,7 @@ const PaymentMethods = () => {
   );
 
   const instructionsTemplate = (props) => (
-    <div 
+    <div
       className="max-w-xs cursor-help group relative"
       title={props?.instructions || 'No instructions'}
     >
@@ -105,8 +99,8 @@ const PaymentMethods = () => {
     <div className="flex flex-col items-center gap-1">
       <span
         className={`px-3 py-1 rounded-full text-xs font-medium ${
-          props?.is_active 
-            ? 'bg-green-100 text-green-700 border border-green-300' 
+          props?.is_active
+            ? 'bg-green-100 text-green-700 border border-green-300'
             : 'bg-red-100 text-red-600 border border-red-300'
         }`}
       >
@@ -129,6 +123,7 @@ const PaymentMethods = () => {
   const actionsTemplate = (props) => (
     <div className="flex gap-2 justify-center">
       <button
+        type="button"
         className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-xs font-medium flex items-center gap-1"
         onClick={() => handleEdit(props)}
         title="Edit payment method"
@@ -136,6 +131,7 @@ const PaymentMethods = () => {
         ✏️ Edit
       </button>
       <button
+        type="button"
         className={`px-3 py-1.5 rounded-lg transition text-xs font-medium flex items-center gap-1 ${
           props.is_active
             ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
@@ -147,6 +143,7 @@ const PaymentMethods = () => {
         {props.is_active ? '⏸️ Deactivate' : '▶️ Activate'}
       </button>
       <button
+        type="button"
         className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs font-medium flex items-center gap-1"
         onClick={() => handleDelete(props.id, props.title)}
         title="Delete payment method"
@@ -158,9 +155,9 @@ const PaymentMethods = () => {
 
   const getDefaultIcon = (currency) => {
     const icons = {
-      'usd': 'https://cdn-icons-png.flaticon.com/512/4209/4209382.png',
-      'syp': 'https://cdn-icons-png.flaticon.com/512/4209/4209382.png',
-      'default': 'https://cdn-icons-png.flaticon.com/512/3536/3536034.png'
+      usd: 'https://cdn-icons-png.flaticon.com/512/4209/4209382.png',
+      syp: 'https://cdn-icons-png.flaticon.com/512/4209/4209382.png',
+      default: 'https://cdn-icons-png.flaticon.com/512/3536/3536034.png'
     };
     return icons[currency] || icons.default;
   };
@@ -177,8 +174,8 @@ const PaymentMethods = () => {
         await axiosInstance.delete(`/payment-methods/admin/payment-methods/${id}/`);
         await fetchPaymentMethods();
         alert('Payment method deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting payment method:', error);
+      } catch (err) {
+        console.error('Error deleting payment method:', err);
         alert('Failed to delete payment method');
       }
     }
@@ -186,13 +183,13 @@ const PaymentMethods = () => {
 
   const toggleStatus = async (id) => {
     try {
-      const method = methods.find(m => m.id === id);
+      const method = methods.find((m) => m.id === id);
       const updatedData = { ...method, is_active: !method.is_active };
-      
+
       await axiosInstance.put(`/payment-methods/admin/payment-methods/${id}/`, updatedData);
       await fetchPaymentMethods();
-    } catch (error) {
-      console.error('Error updating payment method status:', error);
+    } catch (err) {
+      console.error('Error updating payment method status:', err);
       alert('Failed to update payment method status');
     }
   };
@@ -211,7 +208,7 @@ const PaymentMethods = () => {
       description: formData.get('description') || '',
       note: formData.get('note') || '',
       is_active: formData.get('is_active') === 'on',
-      fields: formFields.map(field => ({
+      fields: formFields.map((field) => ({
         field_name: field.field_name,
         field_key: field.field_key,
         input_type: field.input_type,
@@ -229,33 +226,27 @@ const PaymentMethods = () => {
         await axiosInstance.post('/payment-methods/admin/payment-methods/', methodData);
         alert('Payment method created successfully!');
       }
-      
-      // Close modal first, then refresh data
+
       setShowModal(false);
       setEditingMethod(null);
       setFormFields([]);
-      
-      // Refresh data after a short delay to ensure modal is closed
+
       setTimeout(() => {
         fetchPaymentMethods();
       }, 100);
-      
-    } catch (error) {
-      console.error('Error saving payment method:', error);
-      
-      // Show detailed error message
-      if (error.response?.data) {
-        const errorData = error.response.data;
+    } catch (err) {
+      console.error('Error saving payment method:', err);
+
+      if (err.response?.data) {
+        const errorData = err.response.data;
         let errorMessage = 'Failed to save payment method:\n';
-        
-        // Handle field-specific errors
+
         if (typeof errorData === 'object') {
-          Object.keys(errorData).forEach(key => {
+          Object.keys(errorData).forEach((key) => {
             if (Array.isArray(errorData[key])) {
               errorMessage += `• ${key}: ${errorData[key].join(', ')}\n`;
             } else if (typeof errorData[key] === 'object') {
-              // Handle nested errors
-              Object.keys(errorData[key]).forEach(nestedKey => {
+              Object.keys(errorData[key]).forEach((nestedKey) => {
                 errorMessage += `• ${key}.${nestedKey}: ${errorData[key][nestedKey]}\n`;
               });
             } else {
@@ -265,10 +256,10 @@ const PaymentMethods = () => {
         } else {
           errorMessage += errorData;
         }
-        
+
         alert(errorMessage);
-      } else if (error.message) {
-        alert(`Error: ${error.message}`);
+      } else if (err.message) {
+        alert(`Error: ${err.message}`);
       } else {
         alert('Failed to save payment method. Please check the console for details.');
       }
@@ -282,32 +273,31 @@ const PaymentMethods = () => {
   };
 
   const addFormField = () => {
-    setFormFields(prev => [...prev, {
+    setFormFields((prev) => [...prev, {
       field_name: '',
       field_key: '',
       input_type: 'text',
       is_required: true,
       placeholder: '',
-      order: prev.length
+      order: prev.length,
     }]);
   };
 
   const updateFormField = (index, field, value) => {
-    setFormFields(prev => {
+    setFormFields((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
-      
-      // Auto-generate field_key from field_name
+
       if (field === 'field_name') {
         updated[index].field_key = value.toLowerCase().replace(/[^a-z0-9]+/g, '_');
       }
-      
+
       return updated;
     });
   };
 
   const removeFormField = (index) => {
-    setFormFields(prev => prev.filter((_, i) => i !== index));
+    setFormFields((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleToolbarClick = (args) => {
@@ -316,9 +306,9 @@ const PaymentMethods = () => {
     }
   };
 
-  const activeMethods = methods.filter(m => m.is_active).length;
-  const usdMethods = methods.filter(m => m.currency === 'usd').length;
-  const sypMethods = methods.filter(m => m.currency === 'syp').length;
+  const activeMethods = methods.filter((m) => m.is_active).length;
+  const usdMethods = methods.filter((m) => m.currency === 'usd').length;
+  const sypMethods = methods.filter((m) => m.currency === 'syp').length;
 
   if (loading) {
     return (
@@ -338,6 +328,7 @@ const PaymentMethods = () => {
         <div className="flex justify-center items-center h-40">
           <div className="text-lg text-red-500">{error}</div>
           <button
+            type="button"
             onClick={fetchPaymentMethods}
             className="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -350,14 +341,14 @@ const PaymentMethods = () => {
 
   return (
     <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
-      <Header 
-        category="Payments Management" 
-        title="Manual Payment Methods" 
+      <Header
+        category="Payments Management"
+        title="Manual Payment Methods"
       />
 
-      {/* Refresh Button */}
       <div className="flex justify-end mb-4">
         <button
+          type="button"
           onClick={fetchPaymentMethods}
           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm flex items-center gap-2"
         >
@@ -400,6 +391,7 @@ const PaymentMethods = () => {
           </div>
         </div>
         <button
+          type="button"
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium"
         >
@@ -410,70 +402,69 @@ const PaymentMethods = () => {
       {methods && methods.length > 0 ? (
         <GridComponent
           dataSource={filteredMethods}
-          allowPaging={true}
-          allowSorting={true}
-          allowFiltering={true}
+          allowPaging
+          allowSorting
+          allowFiltering
           toolbar={toolbarOptions}
           pageSettings={{ pageSize: 8 }}
           height={400}
-          enableHover={true}
+          enableHover
           toolbarClick={handleToolbarClick}
           ref={(grid) => {
-            // Add reference to handle grid operations safely
             if (grid && grid.dataSource && !Array.isArray(grid.dataSource)) {
               grid.dataSource = [];
             }
           }}
         >
           <ColumnsDirective>
-            <ColumnDirective 
-              field="id" 
-              headerText="ID" 
-              width="80" 
-              textAlign="Center" 
-              isPrimaryKey={true} 
+            <ColumnDirective
+              field="id"
+              headerText="ID"
+              width="80"
+              textAlign="Center"
+              isPrimaryKey
             />
-            <ColumnDirective 
-              headerText="Icon & Currency" 
-              width="120" 
-              textAlign="Center" 
-              template={iconTemplate} 
+            <ColumnDirective
+              headerText="Icon & Currency"
+              width="120"
+              textAlign="Center"
+              template={iconTemplate}
             />
-            <ColumnDirective 
-              field="title" 
-              headerText="Method Title" 
-              width="200" 
-              textAlign="Left" 
+            <ColumnDirective
+              field="title"
+              headerText="Method Title"
+              width="200"
+              textAlign="Left"
             />
-            <ColumnDirective 
-              headerText="Account Details" 
-              width="220" 
-              template={detailsTemplate} 
-              textAlign="Left" 
+            <ColumnDirective
+              headerText="Account Details"
+              width="220"
+              template={detailsTemplate}
+              textAlign="Left"
             />
-            <ColumnDirective 
-              headerText="Instructions" 
-              width="200" 
-              template={instructionsTemplate} 
-              textAlign="Left" 
+            <ColumnDirective
+              headerText="Instructions"
+              width="200"
+              template={instructionsTemplate}
+              textAlign="Left"
             />
-            <ColumnDirective 
-              headerText="Fields" 
-              width="80" 
-              textAlign="Center" 
-              template={fieldsTemplate} 
+            <ColumnDirective
+              headerText="Fields"
+              width="80"
+              textAlign="Center"
+              template={fieldsTemplate}
             />
-            <ColumnDirective 
-              headerText="Status & Date" 
-              width="140" 
-              textAlign="Center" 
-              template={statusTemplate} 
+            <ColumnDirective
+              headerText="Status & Date"
+              width="140"
+              textAlign="Center"
+              template={statusTemplate}
             />
-            <ColumnDirective 
-              headerText="Actions" 
-              width="280" 
-              textAlign="Center" 
-              template={actionsTemplate} 
+            <ColumnDirective
+              headerText="Actions"
+              width="280"
+              textAlign="Center"
+              template={actionsTemplate}
             />
           </ColumnsDirective>
           <Inject services={[Page, Toolbar, Sort, Filter]} />
@@ -484,6 +475,7 @@ const PaymentMethods = () => {
           <p className="text-gray-500 text-lg">No payment methods found</p>
           <p className="text-gray-400 mt-2">Create your first payment method to get started</p>
           <button
+            type="button"
             onClick={() => setShowModal(true)}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -500,36 +492,36 @@ const PaymentMethods = () => {
                 {editingMethod ? 'Edit Payment Method' : 'Add New Payment Method'}
               </h2>
               <button
+                type="button"
                 onClick={closeModal}
                 className="text-gray-500 hover:text-gray-700 text-lg"
               >
                 ✕
               </button>
             </div>
-            
+
             <form onSubmit={handleAddMethod} className="space-y-6">
-              {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Method Title *
                   </label>
-                  <input 
-                    name="title" 
-                    required 
+                  <input
+                    name="title"
+                    required
                     className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="e.g., Bank Transfer - Syrian Pounds"
                     defaultValue={editingMethod?.title}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Unique Name *
                   </label>
-                  <input 
-                    name="name" 
-                    required 
+                  <input
+                    name="name"
+                    required
                     className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="e.g., bank_transfer_syp"
                     defaultValue={editingMethod?.name}
@@ -543,9 +535,9 @@ const PaymentMethods = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Currency *
                   </label>
-                  <select 
-                    name="currency" 
-                    required 
+                  <select
+                    name="currency"
+                    required
                     className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     defaultValue={editingMethod?.currency || 'usd'}
                   >
@@ -558,8 +550,8 @@ const PaymentMethods = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Icon URL
                   </label>
-                  <input 
-                    name="icon_url" 
+                  <input
+                    name="icon_url"
                     className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="https://example.com/icon.png"
                     defaultValue={editingMethod?.icon_url}
@@ -571,9 +563,9 @@ const PaymentMethods = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Account/Service Details *
                 </label>
-                <textarea 
-                  name="account_details" 
-                  required 
+                <textarea
+                  name="account_details"
+                  required
                   className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows="3"
                   placeholder="Account number, agent details, or service information..."
@@ -585,9 +577,9 @@ const PaymentMethods = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Instructions *
                 </label>
-                <textarea 
-                  name="instructions" 
-                  required 
+                <textarea
+                  name="instructions"
+                  required
                   className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows="3"
                   placeholder="Step-by-step instructions for users..."
@@ -600,8 +592,8 @@ const PaymentMethods = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description
                   </label>
-                  <textarea 
-                    name="description" 
+                  <textarea
+                    name="description"
                     className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     rows="2"
                     placeholder="Optional description..."
@@ -613,8 +605,8 @@ const PaymentMethods = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Note
                   </label>
-                  <textarea 
-                    name="note" 
+                  <textarea
+                    name="note"
                     className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     rows="2"
                     placeholder="Additional notes..."
@@ -623,7 +615,6 @@ const PaymentMethods = () => {
                 </div>
               </div>
 
-              {/* Dynamic Form Fields Section */}
               <div className="border-t pt-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold">Form Fields</h3>
@@ -635,7 +626,7 @@ const PaymentMethods = () => {
                     ➕ Add Field
                   </button>
                 </div>
-                
+
                 <p className="text-sm text-gray-600 mb-4">
                   Define the input fields users need to fill when using this payment method
                 </p>
@@ -735,10 +726,10 @@ const PaymentMethods = () => {
               </div>
 
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                <input 
-                  type="checkbox" 
-                  name="is_active" 
-                  id="is_active" 
+                <input
+                  type="checkbox"
+                  name="is_active"
+                  id="is_active"
                   defaultChecked={editingMethod?.is_active ?? true}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />

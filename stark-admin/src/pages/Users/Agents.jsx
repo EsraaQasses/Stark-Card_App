@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  GridComponent, 
-  ColumnsDirective, 
-  ColumnDirective, 
-  Page, 
-  Inject, 
-  Toolbar, 
-  Sort, 
-  Filter, 
-  Selection 
+import {
+  GridComponent,
+  ColumnsDirective,
+  ColumnDirective,
+  Page,
+  Inject,
+  Toolbar,
+  Sort,
+  Filter,
+  Selection,
 } from '@syncfusion/ej2-react-grids';
 import { Header } from '../../components';
 import axiosInstance from '../../utils/axiosConfig';
@@ -24,15 +24,14 @@ const Agents = () => {
 
   const toolbarOptions = ['Search', 'Refresh'];
 
-  // Fetch agents data from backend
   const fetchAgents = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await axiosInstance.get('/agents/agents/');
       setAgentsData(response.data);
-    } catch (error) {
-      console.error('Error fetching agents:', error);
+    } catch (err) {
+      console.error('Error fetching agents:', err);
       setError('Failed to load agents data');
     } finally {
       setLoading(false);
@@ -43,8 +42,7 @@ const Agents = () => {
     fetchAgents();
   }, []);
 
-  // Format agents data for the grid
-  const formattedAgentsData = agentsData.map(agent => ({
+  const formattedAgentsData = agentsData.map((agent) => ({
     id: agent.id,
     username: agent.username,
     full_name: agent.full_name,
@@ -52,12 +50,12 @@ const Agents = () => {
     balance: agent.balance,
     commission_rate: agent.commission_rate,
     products_count: agent.products_count,
-    balance_formatted: `$${agent.balance?.toLocaleString(undefined, { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
+    balance_formatted: `$${agent.balance?.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }) || '0.00'}`,
     commission_rate_formatted: `${agent.commission_rate}%`,
-    status: 'Active' // You might want to add status field to your backend
+    status: 'Active',
   }));
 
   const handleRowSelected = (args) => {
@@ -83,16 +81,15 @@ const Agents = () => {
     try {
       setUpdatingCommission(true);
       await axiosInstance.post(`/agents/agent/${selectedAgent.id}/commission/`, {
-        commission_rate: parseFloat(commissionRate)
+        commission_rate: parseFloat(commissionRate),
       });
-      
-      // Refresh agents data
+
       await fetchAgents();
       setShowCommissionModal(false);
       setCommissionRate('');
       alert('Commission rate updated successfully!');
-    } catch (error) {
-      console.error('Error updating commission:', error);
+    } catch (err) {
+      console.error('Error updating commission:', err);
       alert('Failed to update commission rate');
     } finally {
       setUpdatingCommission(false);
@@ -114,11 +111,26 @@ const Agents = () => {
         await fetchAgents();
         setSelectedAgent(null);
         alert('Agent demoted successfully!');
-      } catch (error) {
-        console.error('Error demoting agent:', error);
+      } catch (err) {
+        console.error('Error demoting agent:', err);
         alert('Failed to demote agent');
       }
     }
+  };
+
+  const handleModalClose = () => {
+    setShowCommissionModal(false);
+  };
+
+  const calculateTotalBalance = () => { return agentsData.reduce((sum, agent) => sum + agent.balance, 0); };
+
+  const calculateAverageCommission = () => {
+    if (agentsData.length === 0) return 0;
+    return agentsData.reduce((sum, agent) => sum + agent.commission_rate, 0) / agentsData.length;
+  };
+
+  const calculateTotalClients = () => {
+    return agentsData.reduce((sum, agent) => sum + agent.clients_count, 0);
   };
 
   if (loading) {
@@ -139,6 +151,7 @@ const Agents = () => {
         <div className="flex justify-center items-center h-40">
           <div className="text-lg text-red-500">{error}</div>
           <button
+            type="button"
             onClick={fetchAgents}
             className="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -152,26 +165,28 @@ const Agents = () => {
   return (
     <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
       <Header category="Management" title="Agents" />
-      
-      {/* Selected Agent Actions */}
+
       {selectedAgent && (
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <div className="flex justify-between items-center mb-3">
             <h3 className="font-semibold text-lg">Selected Agent: {selectedAgent.full_name}</h3>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={handleViewUsers}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
               >
                 View Users
               </button>
               <button
+                type="button"
                 onClick={handleUpdateCommission}
                 className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm"
               >
                 Update Commission
               </button>
               <button
+                type="button"
                 onClick={handleDemoteAgent}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm"
               >
@@ -200,13 +215,12 @@ const Agents = () => {
         </div>
       )}
 
-      {/* Agents Grid */}
       <GridComponent
         dataSource={formattedAgentsData}
-        allowPaging={true}
+        allowPaging
         pageSettings={{ pageSize: 10 }}
-        allowSorting={true}
-        allowFiltering={true}
+        allowSorting
+        allowFiltering
         toolbar={toolbarOptions}
         height={400}
         rowSelected={handleRowSelected}
@@ -220,53 +234,52 @@ const Agents = () => {
             width="80"
             textAlign="Center"
           />
-          <ColumnDirective 
-            field="username" 
-            headerText="Username" 
-            width="120" 
+          <ColumnDirective
+            field="username"
+            headerText="Username"
+            width="120"
             textAlign="Left"
           />
-          <ColumnDirective 
-            field="full_name" 
-            headerText="Full Name" 
-            width="150" 
+          <ColumnDirective
+            field="full_name"
+            headerText="Full Name"
+            width="150"
             textAlign="Left"
           />
-          <ColumnDirective 
-            field="clients_count" 
-            headerText="Clients" 
-            width="80" 
+          <ColumnDirective
+            field="clients_count"
+            headerText="Clients"
+            width="80"
             textAlign="Center"
           />
-          <ColumnDirective 
-            field="balance_formatted" 
-            headerText="Balance" 
-            width="120" 
+          <ColumnDirective
+            field="balance_formatted"
+            headerText="Balance"
+            width="120"
             textAlign="Center"
           />
-          <ColumnDirective 
-            field="commission_rate_formatted" 
-            headerText="Commission" 
-            width="100" 
+          <ColumnDirective
+            field="commission_rate_formatted"
+            headerText="Commission"
+            width="100"
             textAlign="Center"
           />
-          <ColumnDirective 
-            field="products_count" 
-            headerText="Products" 
-            width="80" 
+          <ColumnDirective
+            field="products_count"
+            headerText="Products"
+            width="80"
             textAlign="Center"
           />
-          <ColumnDirective 
-            field="status" 
-            headerText="Status" 
-            width="100" 
+          <ColumnDirective
+            field="status"
+            headerText="Status"
+            width="100"
             textAlign="Center"
           />
         </ColumnsDirective>
         <Inject services={[Page, Toolbar, Sort, Filter, Selection]} />
       </GridComponent>
 
-      {/* Commission Update Modal */}
       {showCommissionModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96">
@@ -290,13 +303,15 @@ const Agents = () => {
             </div>
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => setShowCommissionModal(false)}
+                type="button"
+                onClick={handleModalClose}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
                 disabled={updatingCommission}
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleSaveCommission}
                 disabled={updatingCommission || !commissionRate}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:bg-gray-400"
@@ -308,7 +323,6 @@ const Agents = () => {
         </div>
       )}
 
-      {/* Quick Stats */}
       <div className="mt-6 grid grid-cols-4 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-blue-800 font-semibold">Total Agents</p>
@@ -317,25 +331,19 @@ const Agents = () => {
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-green-800 font-semibold">Total Clients</p>
           <p className="text-2xl font-bold text-green-600">
-            {agentsData.reduce((sum, agent) => sum + agent.clients_count, 0)}
+            {calculateTotalClients()}
           </p>
         </div>
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <p className="text-purple-800 font-semibold">Total Balance</p>
           <p className="text-2xl font-bold text-purple-600">
-            ${agentsData.reduce((sum, agent) => sum + agent.balance, 0).toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-            })}
+            ${calculateTotalBalance().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
           <p className="text-orange-800 font-semibold">Avg Commission</p>
           <p className="text-2xl font-bold text-orange-600">
-            {agentsData.length > 0 
-              ? (agentsData.reduce((sum, agent) => sum + agent.commission_rate, 0) / agentsData.length).toFixed(1) + '%'
-              : '0%'
-            }
+            {`${calculateAverageCommission().toFixed(1)}%`}
           </p>
         </div>
       </div>

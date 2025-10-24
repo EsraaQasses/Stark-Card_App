@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { MdOutlineCancel } from 'react-icons/md';
 import { Button } from '.';
 import { useStateContext } from '../contexts/ContextProvider';
-import { useAuth } from '../contexts/AuthContext';
 import axiosInstance from '../utils/axiosConfig';
 
 const Payments = () => {
   const { currentColor, handleClose } = useStateContext();
-  const { user } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,9 +20,9 @@ const Payments = () => {
       const response = await axiosInstance.get('payment/history/?limit=5');
       setPayments(response.data.results || response.data);
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          err.response?.data?.error || 
-                          'Failed to fetch payments';
+      const errorMessage = err.response?.data?.detail
+  || err.response?.data?.error
+  || 'Failed to fetch payments';
       setError(errorMessage);
       console.error('Error fetching payments:', err);
     } finally {
@@ -74,7 +72,7 @@ const Payments = () => {
   const formatAmount = (amount, currency) => {
     if (currency === 'USD') {
       return `$${parseFloat(amount).toFixed(2)}`;
-    } else if (currency === 'SYP') {
+    } if (currency === 'SYP') {
       return `${parseFloat(amount).toLocaleString()} ل.س`;
     }
     return `${parseFloat(amount).toFixed(2)} ${currency}`;
@@ -85,16 +83,15 @@ const Payments = () => {
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    } else if (diffDays === 1) {
+    } if (diffDays === 1) {
       return `Yesterday, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    } else if (diffDays < 7) {
+    } if (diffDays < 7) {
       return `${diffDays} days ago`;
-    } else {
-      return date.toLocaleDateString();
     }
+    return date.toLocaleDateString();
   };
 
   const handleViewAllPayments = () => {
@@ -160,11 +157,11 @@ const Payments = () => {
         <div className="flex gap-3 items-center">
           <p className="font-semibold text-lg dark:text-gray-200">Recent Payments</p>
           {payments.length > 0 && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="text-white text-xs rounded p-1 px-2 bg-orange-500"
             >
-              {payments.filter(p => p.status === 'pending' || p.status === 'processing').length} Active
+              {payments.filter((p) => p.status === 'pending' || p.status === 'processing').length} Active
             </button>
           )}
         </div>
@@ -177,7 +174,7 @@ const Payments = () => {
           customFunc={() => handleClose('chat')}
         />
       </div>
-      
+
       <div className="mt-5 max-h-80 overflow-y-auto">
         {payments.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-gray-500">
@@ -186,12 +183,12 @@ const Payments = () => {
           </div>
         ) : (
           <>
-            {payments?.map((payment, index) => {
+            {payments?.map((payment) => {
               const currencyColor = getCurrencyColor(payment.wallet_currency);
-              
+
               return (
-                <div 
-                  key={payment.id} 
+                <div
+                  key={payment.id}
                   className="flex items-center gap-4 border-b-1 border-gray-200 dark:border-gray-600 p-3 leading-8 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#4A4E55] rounded-lg transition-colors"
                 >
                   <div className="flex-shrink-0">
@@ -201,7 +198,7 @@ const Payments = () => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
                       <p className="font-semibold dark:text-gray-200 text-sm truncate">
@@ -211,18 +208,18 @@ const Payments = () => {
                         {formatAmount(payment.final_price, payment.wallet_currency)}
                       </p>
                     </div>
-                    
+
                     <p className="text-gray-500 dark:text-gray-400 text-xs truncate">
                       {payment.store_product_name || 'Product Purchase'} • #{payment.id}
                     </p>
-                    
+
                     <div className="flex justify-between items-center mt-1">
                       <p className="text-gray-500 dark:text-gray-400 text-xs">
                         Base: {formatAmount(payment.base_price, payment.wallet_currency)}
                       </p>
                       {getStatusBadge(payment.status)}
                     </div>
-                    
+
                     <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
                       {formatDate(payment.created_at)}
                       {payment.profit_percentage > 0 && (
@@ -231,7 +228,7 @@ const Payments = () => {
                         </span>
                       )}
                     </p>
-                    
+
                     {payment.external_transaction_id && (
                       <p className="text-gray-400 dark:text-gray-500 text-xs mt-1 truncate">
                         Ext: {payment.external_transaction_id}
@@ -241,7 +238,7 @@ const Payments = () => {
                 </div>
               );
             })}
-            
+
             <div className="mt-5 space-y-2">
               <Button
                 color="white"

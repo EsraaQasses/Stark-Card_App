@@ -31,40 +31,38 @@ const AdsPage = () => {
     font_size: 14,
     text_color: 'black',
     image: null,
-    link: ''
+    link: '',
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [gridInstance, setGridInstance] = useState(null);
 
   const selectionsettings = { persistSelection: true };
   const toolbarOptions = ['Add', 'Edit', 'Delete', 'Refresh'];
   const editing = { allowDeleting: true, allowEditing: false, allowAdding: false };
 
-  // Fetch ads data
   const fetchAds = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await axiosInstance.get('/system/ads/');
       setAdsData(response.data);
-    } catch (error) {
-      console.error('Error fetching ads:', error);
+    } catch (err) {
       setError('Failed to load ads data');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch sections and products for dropdowns
   const fetchDropdownData = async () => {
     try {
       const [sectionsRes, productsRes] = await Promise.all([
         axiosInstance.get('/store/sections/'),
-        axiosInstance.get('/store/products/')
+        axiosInstance.get('/store/products/'),
       ]);
       setSections(sectionsRes.data);
       setProducts(productsRes.data);
-    } catch (error) {
-      console.error('Error fetching dropdown data:', error);
+    } catch (err) {
+      console.error('Error fetching dropdown data:', err);
     }
   };
 
@@ -75,24 +73,23 @@ const AdsPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        image: file
+        image: file,
       }));
-      
-      // Create preview
+
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target.result);
+      reader.onload = (en) => {
+        setImagePreview(en.target.result);
       };
       reader.readAsDataURL(file);
     }
@@ -107,7 +104,7 @@ const AdsPage = () => {
       font_size: 14,
       text_color: 'black',
       image: null,
-      link: ''
+      link: '',
     });
     setImagePreview(null);
     setSelectedAd(null);
@@ -117,7 +114,7 @@ const AdsPage = () => {
     e.preventDefault();
     try {
       const submitData = new FormData();
-      Object.keys(formData).forEach(key => {
+      Object.keys(formData).forEach((key) => {
         if (formData[key] !== null && formData[key] !== '') {
           submitData.append(key, formData[key]);
         }
@@ -132,11 +129,8 @@ const AdsPage = () => {
       setShowAddModal(false);
       resetForm();
       fetchAds();
-      
-      // Show success message
       alert('تمت إضافة الإعلان بنجاح ✅');
-    } catch (error) {
-      console.error('Error adding ad:', error);
+    } catch (err) {
       alert('فشل في إضافة الإعلان ❌');
     }
   };
@@ -145,7 +139,7 @@ const AdsPage = () => {
     e.preventDefault();
     try {
       const submitData = new FormData();
-      Object.keys(formData).forEach(key => {
+      Object.keys(formData).forEach((key) => {
         if (formData[key] !== null && formData[key] !== '') {
           submitData.append(key, formData[key]);
         }
@@ -160,21 +154,35 @@ const AdsPage = () => {
       setShowEditModal(false);
       resetForm();
       fetchAds();
-      
       alert('تم تعديل الإعلان بنجاح ✅');
-    } catch (error) {
-      console.error('Error editing ad:', error);
+    } catch (err) {
       alert('فشل في تعديل الإعلان ❌');
     }
   };
 
+  const handleDeleteAds = async (selected) => {
+    if (window.confirm(`Are you sure you want to delete ${selected.length} ad(s)?`)) {
+      try {
+        const deletePromises = selected.map((ad) => axiosInstance.delete(`/system/ads/${ad.id}/`));
+        await Promise.all(deletePromises);
+        await fetchAds();
+        alert(`${selected.length} ad(s) deleted successfully ❌`);
+      } catch (err) {
+        alert('Error deleting ads');
+      }
+    }
+  };
+
   const toolbarClick = async (args) => {
+    if (!gridInstance) return;
+
+    const selected = gridInstance.getSelectedRecords();
+
     if (args.item.id.includes('addgrid')) {
       setShowAddModal(true);
     }
 
     if (args.item.id.includes('editgrid')) {
-      const selected = gridInstance.getSelectedRecords();
       if (selected.length === 1) {
         const ad = selected[0];
         setSelectedAd(ad);
@@ -186,7 +194,7 @@ const AdsPage = () => {
           font_size: ad.font_size,
           text_color: ad.text_color,
           image: null,
-          link: ad.link || ''
+          link: ad.link || '',
         });
         setImagePreview(ad.image || null);
         setShowEditModal(true);
@@ -196,22 +204,8 @@ const AdsPage = () => {
     }
 
     if (args.item.id.includes('deletegrid')) {
-      const selected = gridInstance.getSelectedRecords();
       if (selected.length > 0) {
-        if (window.confirm(`Are you sure you want to delete ${selected.length} ad(s)?`)) {
-          try {
-            const deletePromises = selected.map(ad => 
-              axiosInstance.delete(`/system/ads/${ad.id}/`)
-            );
-            
-            await Promise.all(deletePromises);
-            await fetchAds();
-            alert(`${selected.length} ad(s) deleted successfully ❌`);
-          } catch (error) {
-            console.error('Error deleting ads:', error);
-            alert('Error deleting ads');
-          }
-        }
+        await handleDeleteAds(selected);
       } else {
         alert('Please select an ad to delete.');
       }
@@ -222,107 +216,116 @@ const AdsPage = () => {
     }
   };
 
-  // Ads grid columns configuration
   const adsGrid = [
-    { 
-      type: 'checkbox', 
-      width: '50' 
+    {
+      type: 'checkbox',
+      width: '50',
     },
-    { 
-      field: 'id', 
-      headerText: 'ID', 
-      width: '80', 
+    {
+      field: 'id',
+      headerText: 'ID',
+      width: '80',
       textAlign: 'Center',
-      isPrimaryKey: true 
+      isPrimaryKey: true,
     },
-    { 
-      field: 'section_name', 
-      headerText: 'Section', 
-      width: '120' 
+    {
+      field: 'section_name',
+      headerText: 'Section',
+      width: '120',
     },
-    { 
-      field: 'product_name', 
-      headerText: 'Product', 
-      width: '150' 
+    {
+      field: 'product_name',
+      headerText: 'Product',
+      width: '150',
     },
-    { 
-      field: 'text', 
-      headerText: 'Ad Text', 
+    {
+      field: 'text',
+      headerText: 'Ad Text',
       width: '200',
       template: (props) => (
         <div className="truncate" title={props.text}>
           {props.text.length > 50 ? `${props.text.substring(0, 50)}...` : props.text}
         </div>
-      )
+      ),
     },
-    { 
-      field: 'background_color', 
-      headerText: 'Background', 
+    {
+      field: 'background_color',
+      headerText: 'Background',
       width: '100',
       template: (props) => (
         <div className="flex items-center gap-2">
-          <div 
+          <div
             className="w-4 h-4 rounded border"
             style={{ backgroundColor: props.background_color }}
-          ></div>
+          />
           <span>{props.background_color}</span>
         </div>
-      )
+      ),
     },
-    { 
-      field: 'font_size', 
-      headerText: 'Font Size', 
+    {
+      field: 'font_size',
+      headerText: 'Font Size',
       width: '80',
       template: (props) => (
         <span>{props.font_size}px</span>
-      )
+      ),
     },
-    { 
-      field: 'text_color', 
-      headerText: 'Text Color', 
+    {
+      field: 'text_color',
+      headerText: 'Text Color',
       width: '100',
       template: (props) => (
         <span className={`px-2 py-1 rounded text-xs font-medium ${
           props.text_color === 'white' ? 'bg-gray-800 text-white' : 'bg-gray-200 text-black'
-        }`}>
+        }`}
+        >
           {props.text_color}
         </span>
-      )
+      ),
     },
-    { 
-      field: 'image', 
-      headerText: 'Image', 
+    {
+      field: 'image',
+      headerText: 'Image',
       width: '80',
       template: (props) => (
-        props.image ? 
-          <div className="w-8 h-8 bg-cover bg-center rounded" 
-               style={{ backgroundImage: `url(${props.image})` }}></div> :
-          <span className="text-gray-400">No image</span>
-      )
+        props.image
+          ? (
+            <div
+              className="w-8 h-8 bg-cover bg-center rounded"
+              style={{ backgroundImage: `url(${props.image})` }}
+            />
+          )
+          : <span className="text-gray-400">No image</span>
+      ),
     },
-    { 
-      field: 'link', 
-      headerText: 'Link', 
+    {
+      field: 'link',
+      headerText: 'Link',
       width: '150',
       template: (props) => (
-        props.link ? 
-          <a href={props.link} target="_blank" rel="noopener noreferrer" 
-             className="text-blue-500 hover:underline truncate block">
-            {props.link.length > 20 ? `${props.link.substring(0, 20)}...` : props.link}
-          </a> :
-          <span className="text-gray-400">No link</span>
-      )
+        props.link
+          ? (
+            <a
+              href={props.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline truncate block"
+            >
+              {props.link.length > 20 ? `${props.link.substring(0, 20)}...` : props.link}
+            </a>
+          )
+          : <span className="text-gray-400">No link</span>
+      ),
     },
-    { 
-      field: 'created_at', 
-      headerText: 'Created At', 
+    {
+      field: 'created_at',
+      headerText: 'Created At',
       width: '120',
       format: 'yMd',
-      textAlign: 'Center'
-    }
+      textAlign: 'Center',
+    },
   ];
 
-  // Modal component
   const AdModal = ({ isOpen, onClose, onSubmit, isEdit = false }) => (
     isOpen && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -332,10 +335,9 @@ const AdsPage = () => {
               {isEdit ? 'Edit Ad' : 'Add New Ad'}
             </h2>
           </div>
-          
-          <form onSubmit={isEdit ? handleEditAd : handleAddAd} className="p-6 space-y-4">
+
+          <form onSubmit={onSubmit} className="p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {/* Section */}
               <div>
                 <label className="block text-sm font-medium mb-2">Section *</label>
                 <select
@@ -346,7 +348,7 @@ const AdsPage = () => {
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select Section</option>
-                  {sections.map(section => (
+                  {sections.map((section) => (
                     <option key={section.id} value={section.id}>
                       {section.name}
                     </option>
@@ -354,7 +356,6 @@ const AdsPage = () => {
                 </select>
               </div>
 
-              {/* Product */}
               <div>
                 <label className="block text-sm font-medium mb-2">Product *</label>
                 <select
@@ -365,7 +366,7 @@ const AdsPage = () => {
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select Product</option>
-                  {products.map(product => (
+                  {products.map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.name}
                     </option>
@@ -374,7 +375,6 @@ const AdsPage = () => {
               </div>
             </div>
 
-            {/* Ad Text */}
             <div>
               <label className="block text-sm font-medium mb-2">Ad Text *</label>
               <textarea
@@ -389,7 +389,6 @@ const AdsPage = () => {
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              {/* Background Color */}
               <div>
                 <label className="block text-sm font-medium mb-2">Background Color</label>
                 <div className="flex gap-2">
@@ -411,7 +410,6 @@ const AdsPage = () => {
                 </div>
               </div>
 
-              {/* Font Size */}
               <div>
                 <label className="block text-sm font-medium mb-2">Font Size</label>
                 <input
@@ -425,7 +423,6 @@ const AdsPage = () => {
                 />
               </div>
 
-              {/* Text Color */}
               <div>
                 <label className="block text-sm font-medium mb-2">Text Color</label>
                 <select
@@ -440,7 +437,6 @@ const AdsPage = () => {
               </div>
             </div>
 
-            {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium mb-2">Ad Image</label>
               <input
@@ -451,16 +447,15 @@ const AdsPage = () => {
               />
               {imagePreview && (
                 <div className="mt-2">
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
                     className="h-20 object-cover rounded border"
                   />
                 </div>
               )}
             </div>
 
-            {/* Link */}
             <div>
               <label className="block text-sm font-medium mb-2">Link</label>
               <input
@@ -473,22 +468,20 @@ const AdsPage = () => {
               />
             </div>
 
-            {/* Preview */}
             <div className="p-4 border rounded bg-gray-50">
               <label className="block text-sm font-medium mb-2">Preview</label>
-              <div 
+              <div
                 className="p-4 rounded border"
                 style={{
                   backgroundColor: formData.background_color,
                   color: formData.text_color,
-                  fontSize: `${formData.font_size}px`
+                  fontSize: `${formData.font_size}px`,
                 }}
               >
                 {formData.text || 'Ad preview will appear here...'}
               </div>
             </div>
 
-            {/* Buttons */}
             <div className="flex gap-3 pt-4 border-t">
               <button
                 type="submit"
@@ -531,6 +524,7 @@ const AdsPage = () => {
         <div className="flex justify-center items-center h-40">
           <div className="text-lg text-red-500">{error}</div>
           <button
+            type="button"
             onClick={fetchAds}
             className="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -544,15 +538,15 @@ const AdsPage = () => {
   return (
     <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
       <Header category="Management" title="Advertisements" />
-      
-      {/* Stats and Actions */}
+
       <div className="flex justify-between items-center mb-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-blue-800 font-semibold">Total Active Ads</p>
           <p className="text-2xl font-bold text-blue-600">{adsData.length}</p>
         </div>
-        
+
         <button
+          type="button"
           onClick={() => setShowAddModal(true)}
           className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm flex items-center gap-2"
         >
@@ -573,6 +567,7 @@ const AdsPage = () => {
           allowFiltering
           toolbarClick={toolbarClick}
           width="auto"
+          ref={(g) => setGridInstance(g)}
         >
           <ColumnsDirective>
             {adsGrid.map((item, index) => (
@@ -587,6 +582,7 @@ const AdsPage = () => {
           <p className="text-gray-500 text-lg">No advertisements found</p>
           <p className="text-gray-400 mt-2">Start by creating your first advertisement</p>
           <button
+            type="button"
             onClick={() => setShowAddModal(true)}
             className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
           >
@@ -595,19 +591,18 @@ const AdsPage = () => {
         </div>
       )}
 
-      {/* Modals */}
-      <AdModal 
+      <AdModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddAd}
         isEdit={false}
       />
-      
-      <AdModal 
+
+      <AdModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         onSubmit={handleEditAd}
-        isEdit={true}
+        isEdit
       />
     </div>
   );

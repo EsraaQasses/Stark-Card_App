@@ -11,7 +11,6 @@ const LastActions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch admin actions from backend
   useEffect(() => {
     fetchAdminActions();
   }, []);
@@ -22,8 +21,8 @@ const LastActions = () => {
       setError(null);
       const response = await axiosInstance.get('/system/admin-actions/');
       setActions(response.data);
-    } catch (error) {
-      console.error('Error fetching admin actions:', error);
+    } catch (fetchError) {
+      console.error('Error fetching admin actions:', fetchError);
       setError('Failed to load admin actions');
     } finally {
       setLoading(false);
@@ -100,22 +99,21 @@ const LastActions = () => {
     const now = new Date();
     const created = new Date(createdAt);
     const diffInSeconds = Math.floor((now - created) / 1000);
-    
+
     if (diffInSeconds < 60) return 'Just now';
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-    
+
     return created.toLocaleDateString('en-US', {
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
   const formatActionDescription = (description) => {
     if (!description) return 'No description available';
-    
-    // Try to parse JSON description
+
     try {
       const parsed = JSON.parse(description);
       if (typeof parsed === 'object') {
@@ -125,11 +123,106 @@ const LastActions = () => {
       }
       return String(parsed);
     } catch {
-      // If not JSON, return as is
-      return description.length > 100 
-        ? `${description.substring(0, 100)}...` 
+      return description.length > 100
+        ? `${description.substring(0, 100)}...`
         : description;
     }
+  };
+
+  const getTodayActionsCount = () => {
+    const today = new Date();
+    return actions.filter((action) => {
+      const actionDate = new Date(action.created_at);
+      return actionDate.toDateString() === today.toDateString();
+    }).length;
+  };
+
+  const getThisWeekActionsCount = () => {
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return actions.filter((action) => {
+      const actionDate = new Date(action.created_at);
+      return actionDate > weekAgo;
+    }).length;
+  };
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-red-500 dark:text-red-400">{error}</p>
+          <button
+            type="button"
+            onClick={fetchAdminActions}
+            className="mt-2 text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100 text-sm"
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+
+    if (actions.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <MdHistory className="text-4xl text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-500 dark:text-gray-400">No recent actions</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
+            Admin activities will appear here
+          </p>
+        </div>
+      );
+    }
+
+    return actions.map((action) => (
+      <div
+        key={action.id}
+        className={`flex items-start gap-4 p-3 rounded-lg mb-3 border-l-4 ${
+          getActionColor(action.action_type, action.description)
+        }`}
+      >
+        <div className="flex-shrink-0 mt-1">
+          {getActionIcon(action.action_type, action.description)}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <p className="font-semibold dark:text-gray-200 text-sm">
+                {action.admin_name || 'System Admin'}
+              </p>
+              {action.target_name && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Target: {action.target_name}
+                </p>
+              )}
+            </div>
+            {getActionTypeBadge(action.action_type, action.description)}
+          </div>
+
+          <p className="text-gray-600 dark:text-gray-300 text-xs mb-2">
+            {formatActionDescription(action.description)}
+          </p>
+
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400 dark:text-gray-500 text-xs">
+              {getTimeAgo(action.created_at)}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+              {action.action_type?.split(' ')[0] || 'Action'}
+            </span>
+          </div>
+        </div>
+      </div>
+    ));
   };
 
   return (
@@ -143,6 +236,7 @@ const LastActions = () => {
           </div>
         </div>
         <button
+          type="button"
           onClick={() => window.history.back()}
           className="text-2xl p-3 hover:bg-light-gray rounded-full text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
         >
@@ -151,74 +245,9 @@ const LastActions = () => {
       </div>
 
       <div className="mt-4 max-h-80 overflow-y-auto">
-        {loading ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        ) : error ? (
-          <div className="text-center py-8">
-            <p className="text-red-500 dark:text-red-400">{error}</p>
-            <button
-              onClick={fetchAdminActions}
-              className="mt-2 text-blue-500 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-100 text-sm"
-            >
-              Try Again
-            </button>
-          </div>
-        ) : actions.length === 0 ? (
-          <div className="text-center py-8">
-            <MdHistory className="text-4xl text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">No recent actions</p>
-            <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
-              Admin activities will appear here
-            </p>
-          </div>
-        ) : (
-          actions.map((action) => (
-            <div 
-              key={action.id}
-              className={`flex items-start gap-4 p-3 rounded-lg mb-3 border-l-4 ${
-                getActionColor(action.action_type, action.description)
-              }`}
-            >
-              <div className="flex-shrink-0 mt-1">
-                {getActionIcon(action.action_type, action.description)}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-semibold dark:text-gray-200 text-sm">
-                      {action.admin_name || 'System Admin'}
-                    </p>
-                    {action.target_name && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Target: {action.target_name}
-                      </p>
-                    )}
-                  </div>
-                  {getActionTypeBadge(action.action_type, action.description)}
-                </div>
-                
-                <p className="text-gray-600 dark:text-gray-300 text-xs mb-2">
-                  {formatActionDescription(action.description)}
-                </p>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400 dark:text-gray-500 text-xs">
-                    {getTimeAgo(action.created_at)}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                    {action.action_type?.split(' ')[0] || 'Action'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
+        {renderContent()}
       </div>
 
-      {/* Refresh Button */}
       {actions.length > 0 && (
         <div className="mt-6">
           <Button
@@ -232,7 +261,6 @@ const LastActions = () => {
         </div>
       )}
 
-      {/* Quick Stats */}
       {actions.length > 0 && (
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
           <div className="bg-gray-100 dark:bg-gray-700 rounded p-2">
@@ -242,22 +270,13 @@ const LastActions = () => {
           <div className="bg-gray-100 dark:bg-gray-700 rounded p-2">
             <p className="text-xs text-gray-500 dark:text-gray-400">Today</p>
             <p className="font-semibold text-gray-800 dark:text-white">
-              {actions.filter(action => {
-                const actionDate = new Date(action.created_at);
-                const today = new Date();
-                return actionDate.toDateString() === today.toDateString();
-              }).length}
+              {getTodayActionsCount()}
             </p>
           </div>
           <div className="bg-gray-100 dark:bg-gray-700 rounded p-2">
             <p className="text-xs text-gray-500 dark:text-gray-400">This Week</p>
             <p className="font-semibold text-gray-800 dark:text-white">
-              {actions.filter(action => {
-                const actionDate = new Date(action.created_at);
-                const weekAgo = new Date();
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                return actionDate > weekAgo;
-              }).length}
+              {getThisWeekActionsCount()}
             </p>
           </div>
         </div>

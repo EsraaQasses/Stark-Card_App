@@ -20,11 +20,10 @@ const ObjectionRequest = () => {
     total: 0,
     highPriority: 0,
     underReview: 0,
-    resolved: 0
+    resolved: 0,
   });
   const toolbarOptions = ['Search'];
 
-  // Fetch objection requests from backend
   useEffect(() => {
     fetchObjectionRequests();
   }, []);
@@ -33,13 +32,11 @@ const ObjectionRequest = () => {
     try {
       setLoading(true);
       setError(null);
-      // Fetch requests with objection status
       const response = await axiosInstance.get('/all_requests/admin/requests/?status=objection');
       const requests = response.data;
       setObjectionData(requests);
       calculateStats(requests);
-    } catch (error) {
-      console.error('Error fetching objection requests:', error);
+    } catch (err) {
       setError('Failed to load objection requests');
     } finally {
       setLoading(false);
@@ -47,17 +44,15 @@ const ObjectionRequest = () => {
   };
 
   const calculateStats = (requests) => {
-    const stats = {
+    const newStats = {
       total: requests.length,
-      highPriority: requests.filter(item => 
-        item.description?.toLowerCase().includes('urgent') || 
-        item.title?.toLowerCase().includes('urgent') ||
-        item.amount > 500 // Consider high amount as high priority
-      ).length,
-      underReview: requests.filter(item => item.status === 'objection').length,
-      resolved: requests.filter(item => item.status === 'completed' && item.request_type === 'support').length
+      highPriority: requests.filter((item) => item.description?.toLowerCase().includes('urgent')
+      || item.title?.toLowerCase().includes('urgent')
+        || item.amount > 500).length,
+      underReview: requests.filter((item) => item.status === 'objection').length,
+      resolved: requests.filter((item) => item.status === 'completed' && item.request_type === 'support').length,
     };
-    setStats(stats);
+    setStats(newStats);
   };
 
   const handleApproveObjection = async (requestId, customerName, reason) => {
@@ -65,14 +60,13 @@ const ObjectionRequest = () => {
       try {
         await axiosInstance.post(`/all_requests/admin/requests/${requestId}/update_status/`, {
           status: 'completed',
-          admin_notes: 'Objection approved and resolved'
+          admin_notes: 'Objection approved and resolved',
         });
-        
+
         alert(`Objection #${requestId} approved. Refund/compensation processed.`);
-        fetchObjectionRequests(); // Refresh data
-      } catch (error) {
-        console.error('Error approving objection:', error);
-        const errorMessage = error.response?.data?.message || 'Failed to approve objection';
+        fetchObjectionRequests();
+      } catch (err) {
+        const errorMessage = err.response?.data?.message || 'Failed to approve objection';
         alert(`Error: ${errorMessage}`);
       }
     }
@@ -86,25 +80,22 @@ const ObjectionRequest = () => {
       await axiosInstance.post(`/all_requests/admin/requests/${requestId}/update_status/`, {
         status: 'rejected',
         admin_notes: rejectionReason,
-        rejection_reason: rejectionReason
+        rejection_reason: rejectionReason,
       });
-      
+
       alert(`Objection #${requestId} rejected.\nRejection Reason: ${rejectionReason}`);
-      fetchObjectionRequests(); // Refresh data
-    } catch (error) {
-      console.error('Error rejecting objection:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to reject objection';
+      fetchObjectionRequests();
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to reject objection';
       alert(`Error: ${errorMessage}`);
     }
   };
 
   const handleViewDetails = async (requestId, customerName) => {
     try {
-      // Fetch detailed request information including comments
       const response = await axiosInstance.get(`/all_requests/admin/requests/${requestId}/`);
       const requestDetails = response.data;
-      
-      // Show details in alert or you can create a modal for better UX
+
       const details = `
 Customer: ${customerName}
 Title: ${requestDetails.title}
@@ -114,10 +105,9 @@ Created: ${new Date(requestDetails.created_at).toLocaleDateString()}
 Status: ${requestDetails.status}
 Comments: ${requestDetails.comments?.length || 0}
       `;
-      
+
       alert(`Objection Details #${requestId}\n\n${details}`);
-    } catch (error) {
-      console.error('Error fetching request details:', error);
+    } catch (err) {
       alert(`Error loading details for objection #${requestId}`);
     }
   };
@@ -143,17 +133,20 @@ Comments: ${requestDetails.comments?.length || 0}
     );
   };
 
+  const getStatusConfig = (status) => {
+    const statusConfig = {
+      objection: { color: 'bg-orange-500', icon: '🔍', label: 'Under Review' },
+      in_progress: { color: 'bg-yellow-500', icon: '🕵️', label: 'Investigation' },
+      completed: { color: 'bg-green-500', icon: '✅', label: 'Resolved' },
+      rejected: { color: 'bg-red-500', icon: '❌', label: 'Rejected' },
+      pending: { color: 'bg-purple-500', icon: '📈', label: 'Escalated' },
+    };
+    return statusConfig[status] || { color: 'bg-gray-500', icon: '❓', label: status };
+  };
+
   const statusTemplate = (props) => {
     const request = props;
-    const statusConfig = {
-      'objection': { color: 'bg-orange-500', icon: '🔍', label: 'Under Review' },
-      'in_progress': { color: 'bg-yellow-500', icon: '🕵️', label: 'Investigation' },
-      'completed': { color: 'bg-green-500', icon: '✅', label: 'Resolved' },
-      'rejected': { color: 'bg-red-500', icon: '❌', label: 'Rejected' },
-      'pending': { color: 'bg-purple-500', icon: '📈', label: 'Escalated' }
-    };
-
-    const config = statusConfig[request.status] || { color: 'bg-gray-500', icon: '❓', label: request.status };
+    const config = getStatusConfig(request.status);
 
     return (
       <span className={`px-3 py-1 rounded-full text-white text-xs font-semibold ${config.color}`}>
@@ -162,65 +155,64 @@ Comments: ${requestDetails.comments?.length || 0}
     );
   };
 
+  const getObjectionType = (req) => {
+    const desc = (req.description || '').toLowerCase();
+    const title = (req.title || '').toLowerCase();
+
+    if (desc.includes('product') || title.includes('product')) return 'Product Issue';
+    if (desc.includes('payment') || title.includes('payment')) return 'Payment Issue';
+    if (desc.includes('delivery') || desc.includes('shipping')) return 'Delivery Issue';
+    if (desc.includes('refund')) return 'Refund Request';
+    return 'General Issue';
+  };
+
   const reasonTemplate = (props) => {
     const request = props;
     const reason = request.description || request.title;
     const maxLength = 60;
-    
-    // Determine objection type based on content
-    const getObjectionType = (req) => {
-      const desc = (req.description || '').toLowerCase();
-      const title = (req.title || '').toLowerCase();
-      
-      if (desc.includes('product') || title.includes('product')) return 'Product Issue';
-      if (desc.includes('payment') || title.includes('payment')) return 'Payment Issue';
-      if (desc.includes('delivery') || desc.includes('shipping')) return 'Delivery Issue';
-      if (desc.includes('refund')) return 'Refund Request';
-      return 'General Issue';
+    const objectionType = getObjectionType(request);
+
+    const getTypeClass = (type) => {
+      if (type === 'Product Issue') return 'bg-red-100 text-red-800';
+      if (type === 'Payment Issue') return 'bg-blue-100 text-blue-800';
+      if (type === 'Delivery Issue') return 'bg-yellow-100 text-yellow-800';
+      if (type === 'Refund Request') return 'bg-orange-100 text-orange-800';
+      return 'bg-gray-100 text-gray-800';
     };
 
-    const objectionType = getObjectionType(request);
-    
     return (
-      <div 
-        className="text-left cursor-help" 
+      <div
+        className="text-left cursor-help"
         title={reason.length > maxLength ? reason : ''}
       >
         <p className="text-sm">
           {reason.length > maxLength ? `${reason.substring(0, maxLength)}...` : reason}
         </p>
-        <span className={`inline-block px-2 py-0.5 rounded text-xs mt-1 ${
-          objectionType === 'Product Issue' ? 'bg-red-100 text-red-800' :
-          objectionType === 'Payment Issue' ? 'bg-blue-100 text-blue-800' :
-          objectionType === 'Delivery Issue' ? 'bg-yellow-100 text-yellow-800' :
-          objectionType === 'Refund Request' ? 'bg-orange-100 text-orange-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
+        <span className={`inline-block px-2 py-0.5 rounded text-xs mt-1 ${getTypeClass(objectionType)}`}>
           {objectionType}
         </span>
       </div>
     );
   };
 
+  const getPriority = (req) => {
+    if (req.amount > 500) return 'High';
+    if ((req.description || '').toLowerCase().includes('urgent')) return 'High';
+    if (req.amount > 100) return 'Medium';
+    return 'Low';
+  };
+
   const priorityTemplate = (props) => {
     const request = props;
-    
-    // Determine priority based on amount and content
-    const getPriority = (req) => {
-      if (req.amount > 500) return 'High';
-      if ((req.description || '').toLowerCase().includes('urgent')) return 'High';
-      if (req.amount > 100) return 'Medium';
-      return 'Low';
-    };
-
     const priority = getPriority(request);
-    const priorityConfig = {
-      'High': { color: 'bg-red-100 text-red-800', icon: '🔴' },
-      'Medium': { color: 'bg-yellow-100 text-yellow-800', icon: '🟡' },
-      'Low': { color: 'bg-green-100 text-green-800', icon: '🟢' }
+
+    const getPriorityConfig = (priorityLevel) => {
+      if (priorityLevel === 'High') return { color: 'bg-red-100 text-red-800', icon: '🔴' };
+      if (priorityLevel === 'Medium') return { color: 'bg-yellow-100 text-yellow-800', icon: '🟡' };
+      return { color: 'bg-green-100 text-green-800', icon: '🟢' };
     };
 
-    const config = priorityConfig[priority] || { color: 'bg-gray-100 text-gray-800', icon: '⚪' };
+    const config = getPriorityConfig(priority);
 
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
@@ -242,18 +234,21 @@ Comments: ${requestDetails.comments?.length || 0}
     return (
       <div className="flex flex-col gap-2 justify-center">
         <button
+          type="button"
           className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-xs font-medium"
           onClick={() => handleApproveObjection(request.id, request.user_name, request.description)}
         >
           ✓ Approve
         </button>
         <button
+          type="button"
           className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs font-medium"
           onClick={() => handleRejectObjection(request.id, request.user_name, request.description)}
         >
           ✗ Reject
         </button>
         <button
+          type="button"
           className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-xs font-medium"
           onClick={() => handleViewDetails(request.id, request.user_name)}
         >
@@ -270,7 +265,7 @@ Comments: ${requestDetails.comments?.length || 0}
         {date.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
-          day: 'numeric'
+          day: 'numeric',
         })}
       </span>
     );
@@ -279,7 +274,7 @@ Comments: ${requestDetails.comments?.length || 0}
   const amountTemplate = (props) => {
     const request = props;
     if (!request.amount) return <span className="text-gray-400">-</span>;
-    
+
     return (
       <div className="text-center">
         <p className="font-semibold text-sm">
@@ -313,14 +308,14 @@ Comments: ${requestDetails.comments?.length || 0}
 
   return (
     <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white dark:bg-secondary-dark-bg rounded-3xl">
-      <Header 
-        category="Customer Support" 
-        title="Objection Requests Management" 
+      <Header
+        category="Customer Support"
+        title="Objection Requests Management"
       />
-      
-      {/* Refresh Button */}
+
       <div className="flex justify-end mb-4">
         <button
+          type="button"
           onClick={fetchObjectionRequests}
           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm flex items-center gap-2"
           disabled={loading}
@@ -329,7 +324,6 @@ Comments: ${requestDetails.comments?.length || 0}
         </button>
       </div>
 
-      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 dark:bg-orange-900/20 dark:border-orange-800">
           <p className="text-orange-800 dark:text-orange-300 font-semibold">Total Objections</p>
@@ -348,79 +342,79 @@ Comments: ${requestDetails.comments?.length || 0}
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.resolved}</p>
         </div>
       </div>
-      
+
       <GridComponent
         dataSource={objectionData}
-        allowPaging={true}
-        allowSorting={true}
-        allowFiltering={true}
+        allowPaging
+        allowSorting
+        allowFiltering
         toolbar={toolbarOptions}
         pageSettings={{ pageSize: 10 }}
         height={400}
         enableHover={false}
       >
         <ColumnsDirective>
-          <ColumnDirective 
-            field="id" 
-            headerText="ID" 
-            width="80" 
-            textAlign="Center" 
-            isPrimaryKey={true}
+          <ColumnDirective
+            field="id"
+            headerText="ID"
+            width="80"
+            textAlign="Center"
+            isPrimaryKey
           />
-          
-          <ColumnDirective 
-            headerText="Customer" 
-            width="220" 
+
+          <ColumnDirective
+            headerText="Customer"
+            width="220"
             textAlign="Left"
             template={customerTemplate}
           />
-          
-          <ColumnDirective 
-            field="title" 
-            headerText="Title" 
-            width="150" 
-            textAlign="Center" 
+
+          <ColumnDirective
+            field="title"
+            headerText="Title"
+            width="150"
+            textAlign="Center"
           />
-          
-          <ColumnDirective 
-            headerText="Objection Reason" 
-            width="200" 
+
+          <ColumnDirective
+            headerText="Objection Reason"
+            width="200"
             textAlign="Left"
             template={reasonTemplate}
           />
-          
-          <ColumnDirective 
-            headerText="Amount" 
-            width="100" 
+
+          <ColumnDirective
+            headerText="Amount"
+            width="100"
             textAlign="Center"
             template={amountTemplate}
           />
-          
-          <ColumnDirective 
-            headerText="Priority" 
-            width="100" 
+
+          <ColumnDirective
+            headerText="Priority"
+            width="100"
             textAlign="Center"
             template={priorityTemplate}
           />
-          
-          <ColumnDirective 
-            field="created_at" 
-            headerText="Request Date" 
-            width="120" 
+
+          <ColumnDirective
+            field="created_at"
+            headerText="Request Date"
+            width="120"
             textAlign="Center"
             template={dateTemplate}
           />
-          
-          <ColumnDirective 
-            headerText="Status" 
-            width="130" 
+
+          <ColumnDirective
+            headerText="Status"
+            width="130"
             textAlign="Center"
             template={statusTemplate}
           />
-          
-          <ColumnDirective 
-            headerText="Actions" 
-            width="150" 
+
+          <ColumnDirective
+            headerText="Actions"
+            width="150"
             textAlign="Center"
             template={actionTemplate}
           />

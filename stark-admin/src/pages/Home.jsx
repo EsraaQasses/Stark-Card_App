@@ -7,14 +7,14 @@ import { useStateContext } from '../contexts/ContextProvider';
 import axiosInstance from '../utils/axiosConfig';
 
 const Home = () => {
-  const { currentColor, currentMode } = useStateContext();
+  const { currentMode } = useStateContext();
   const [stats, setStats] = useState({
     shipping: 0,
     pending: 0,
     inProgress: 0,
     objection: 0,
     totalUsers: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,37 +28,27 @@ const Home = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch stats with better error handling
       const requests = [
-        // Shipping count - handle potential 500 errors
-        axiosInstance.get('/shipping/count/').catch(error => {
-          console.warn('Shipping count failed:', error);
+        axiosInstance.get('/shipping/count/').catch((Aerror) => {
+          console.warn('Shipping count failed:', Aerror);
           return { data: { pending_count: 0 } };
         }),
-        
-        // Pending requests
-        axiosInstance.get('/all_requests/admin/requests/?status=pending').catch(error => {
-          console.warn('Pending requests failed:', error);
+        axiosInstance.get('/all_requests/admin/requests/?status=pending').catch((Berror) => {
+          console.warn('Pending requests failed:', Berror);
           return { data: [] };
         }),
-        
-        // In progress requests
-        axiosInstance.get('/all_requests/admin/requests/?status=in_progress').catch(error => {
-          console.warn('In progress requests failed:', error);
+        axiosInstance.get('/all_requests/admin/requests/?status=in_progress').catch((Cerror) => {
+          console.warn('In progress requests failed:', Cerror);
           return { data: [] };
         }),
-        
-        // Objection requests
-        axiosInstance.get('/all_requests/admin/requests/?status=objection').catch(error => {
-          console.warn('Objection requests failed:', error);
+        axiosInstance.get('/all_requests/admin/requests/?status=objection').catch((Derror) => {
+          console.warn('Objection requests failed:', Derror);
           return { data: [] };
         }),
-        
-        // User stats - handle potential 404
-        axiosInstance.get('/users/stats/').catch(error => {
-          console.warn('User stats failed:', error);
+        axiosInstance.get('/users/stats/').catch((Eerror) => {
+          console.warn('User stats failed:', Eerror);
           return { data: { total_users: 0 } };
-        })
+        }),
       ];
 
       const [
@@ -66,19 +56,16 @@ const Home = () => {
         pendingResponse,
         inProgressResponse,
         objectionResponse,
-        usersResponse
+        usersResponse,
       ] = await Promise.all(requests);
 
-      // Calculate total amounts for revenue
       const allRequests = [
         ...(pendingResponse.data || []),
         ...(inProgressResponse.data || []),
-        ...(objectionResponse.data || [])
+        ...(objectionResponse.data || []),
       ];
-      
-      const totalRevenue = allRequests.reduce((sum, request) => {
-        return sum + (parseFloat(request.amount) || 0);
-      }, 0);
+
+      const totalRevenue = allRequests.reduce((sum, request) => sum + (parseFloat(request.amount) || 0), 0);
 
       setStats({
         shipping: shippingResponse.data?.pending_count || 0,
@@ -86,73 +73,70 @@ const Home = () => {
         inProgress: (inProgressResponse.data || []).length,
         objection: (objectionResponse.data || []).length,
         totalUsers: usersResponse.data?.total_users || 0,
-        totalRevenue: totalRevenue
+        totalRevenue,
       });
-
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+    } catch (Ferror) {
+      console.error('Error fetching stats:', Ferror);
       setError('Failed to load dashboard data. Some services may be unavailable.');
-      // Set fallback values
       setStats({
         shipping: 0,
         pending: 0,
         inProgress: 0,
         objection: 0,
         totalUsers: 0,
-        totalRevenue: 0
+        totalRevenue: 0,
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // Update earningData with dynamic counts
-  const updatedEarningData = earningData.map(item => {
+  const updatedEarningData = earningData.map((item) => {
     const titleKey = item.title.toLowerCase().replace(/\s+/g, '');
-    
+
     if (titleKey.includes('shipping')) {
       return {
         ...item,
         amount: loading ? '...' : stats.shipping.toString(),
-        description: `${stats.shipping} pending requests`
+        description: `${stats.shipping} pending requests`,
       };
     }
     if (titleKey.includes('pending')) {
       return {
         ...item,
         amount: loading ? '...' : stats.pending.toString(),
-        description: `${stats.pending} requests awaiting review`
+        description: `${stats.pending} requests awaiting review`,
       };
     }
     if (titleKey.includes('progress')) {
       return {
         ...item,
         amount: loading ? '...' : stats.inProgress.toString(),
-        description: `${stats.inProgress} active processes`
+        description: `${stats.inProgress} active processes`,
       };
     }
     if (titleKey.includes('objection')) {
       return {
         ...item,
         amount: loading ? '...' : stats.objection.toString(),
-        description: `${stats.objection} customer objections`
+        description: `${stats.objection} customer objections`,
       };
     }
     if (titleKey.includes('customer') || titleKey.includes('user')) {
       return {
         ...item,
         amount: loading ? '...' : stats.totalUsers.toString(),
-        description: `${stats.totalUsers} total users`
+        description: `${stats.totalUsers} total users`,
       };
     }
     if (titleKey.includes('revenue') || titleKey.includes('sales')) {
       return {
         ...item,
         amount: loading ? '...' : `$${stats.totalRevenue.toLocaleString()}`,
-        description: `Total pending revenue`
+        description: 'Total pending revenue',
       };
     }
-    
+
     return item;
   });
 
@@ -172,22 +156,41 @@ const Home = () => {
     return 'High';
   };
 
+  const getPriorityClass = (level) => {
+    if (level === 'High') return 'bg-red-100 text-red-800';
+    if (level === 'Medium') return 'bg-yellow-100 text-yellow-800';
+    return 'bg-green-100 text-green-800';
+  };
+
+  const getCountForTitle = (titleKey) => {
+    if (titleKey.includes('shipping')) return stats.shipping;
+    if (titleKey.includes('pending')) return stats.pending;
+    if (titleKey.includes('progress')) return stats.inProgress;
+    if (titleKey.includes('objection')) return stats.objection;
+    if (titleKey.includes('customer') || titleKey.includes('user')) return stats.totalUsers;
+    return 0;
+  };
+
+  const handleErrorClose = () => {
+    setError(null);
+  };
+
   return (
     <div className="mt-24">
-      {/* Header with refresh button */}
       <div className="flex justify-between items-center mb-6 px-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Dashboard Overview</h1>
           <p className="text-gray-600 dark:text-gray-400">Real-time statistics and monitoring</p>
         </div>
         <button
+          type="button"
           onClick={refreshData}
           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm flex items-center gap-2"
           disabled={loading}
         >
           {loading ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
               Loading...
             </>
           ) : (
@@ -196,14 +199,14 @@ const Home = () => {
         </button>
       </div>
 
-      {/* Warning message for partial data */}
       {error && (
         <div className="flex justify-center mb-4">
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded relative max-w-2xl mx-3" role="alert">
             <strong className="font-bold">Notice: </strong>
             <span className="block sm:inline">{error}</span>
-            <button 
-              onClick={() => setError(null)} 
+            <button
+              type="button"
+              onClick={handleErrorClose}
               className="absolute top-0 right-0 px-2 py-1"
             >
               ×
@@ -212,24 +215,20 @@ const Home = () => {
         </div>
       )}
 
-      {/* Stats Cards Grid */}
       <div className="flex flex-wrap lg:flex-nowrap justify-center">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 m-3 justify-center items-center w-full max-w-6xl">
           {updatedEarningData.map((item) => {
             const titleKey = item.title.toLowerCase().replace(/\s+/g, '');
-            const count = stats[titleKey.includes('shipping') ? 'shipping' : 
-                              titleKey.includes('pending') ? 'pending' :
-                              titleKey.includes('progress') ? 'inProgress' :
-                              titleKey.includes('objection') ? 'objection' :
-                              titleKey.includes('customer') || titleKey.includes('user') ? 'totalUsers' : 0];
-            
+            const count = getCountForTitle(titleKey);
+            const priorityLevel = getPriorityLevel(count);
+            const priorityClass = getPriorityClass(priorityLevel);
+
             return (
-              <Link 
-                key={item.title} 
-                to={`/${item.title.toLowerCase().replace(/\s+/g, '-')}`} 
+              <Link
+                key={item.title}
+                to={`/${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                 className="block bg-white dark:text-gray-200 dark:bg-secondary-dark-bg p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 dark:border-gray-700 hover:scale-105 transform transition-transform duration-200 relative"
               >
-                {/* Priority badge for high counts */}
                 {!item.title.toLowerCase().includes('revenue') && (
                   <div className="absolute -top-2 -right-2 flex flex-col items-end">
                     {count > 0 && (
@@ -237,16 +236,12 @@ const Home = () => {
                         {count} Pending
                       </span>
                     )}
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      getPriorityLevel(count) === 'High' ? 'bg-red-100 text-red-800' :
-                      getPriorityLevel(count) === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {getPriorityLevel(count)} Priority
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${priorityClass}`}>
+                      {priorityLevel} Priority
                     </span>
                   </div>
                 )}
-                
+
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <p className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -271,17 +266,13 @@ const Home = () => {
                     </span>
                   </div>
                 </div>
-                
-                {/* Status indicator */}
+
                 {!item.title.toLowerCase().includes('revenue') && (
                   <div className="mt-4 flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full mr-2 ${getStatusColor(count)}`}></div>
+                      <div className={`w-3 h-3 rounded-full mr-2 ${getStatusColor(count)}`} />
                       <span className="text-xs text-gray-500">
-                        {count > 0 ? 
-                          `${count} needs attention` : 
-                          'All caught up'
-                        }
+                        {count > 0 ? `${count} needs attention` : 'All caught up'}
                       </span>
                     </div>
                     <div className="text-xs text-gray-400">
@@ -295,9 +286,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Charts and Additional Data Section */}
       <div className="flex gap-6 flex-wrap justify-center mt-8">
-        {/* Revenue Section */}
         <div className="bg-white dark:text-gray-200 dark:bg-secondary-dark-bg m-3 p-6 rounded-2xl md:w-780">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -341,7 +330,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Quick Stats Summary */}
         <div className="bg-white dark:text-gray-200 dark:bg-secondary-dark-bg m-3 p-6 rounded-2xl md:w-96">
           <div className="mb-6">
             <p className="font-semibold text-xl">Quick Summary</p>

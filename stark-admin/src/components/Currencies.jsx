@@ -1,28 +1,126 @@
 import React, { useState, useEffect } from 'react';
-import { MdOutlineCancel, MdSwapVert } from 'react-icons/md';
-import { AiOutlineArrowUp, AiOutlineArrowDown } from 'react-icons/ai';
+import { MdOutlineCancel, MdSwapVert, MdEdit, MdRefresh, MdUpdate } from 'react-icons/md';
+import { AiOutlineArrowUp, AiOutlineArrowDown, AiOutlineSave, AiOutlineClose } from 'react-icons/ai';
 import { useStateContext } from '../contexts/ContextProvider';
 import { Button } from '.';
-import axiosInstance from '../utils/axiosConfig'; // Adjust path as needed
+import axiosInstance from '../utils/axiosConfig';
 
 const Currencies = () => {
-  const { currentColor } = useStateContext();
+  const { currentUser } = useStateContext();
   const [walletData, setWalletData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editingRate, setEditingRate] = useState(false);
+  const [newExchangeRate, setNewExchangeRate] = useState('');
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [updateError, setUpdateError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [refreshingRates, setRefreshingRates] = useState(false);
 
-  // Fetch wallet data from backend
+  const isAdmin = currentUser?.role === 'admin';
+
   const fetchWalletData = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await axiosInstance.get('/wallets/wallet/');
       setWalletData(response.data);
-    } catch (error) {
-      console.error('Error fetching wallet data:', error);
+      if (response.data.exchange_rates?.usd_to_syp?.value) {
+        setNewExchangeRate(response.data.exchange_rates.usd_to_syp.value.toString());
+      }
+    } catch (fetchError) {
+      console.error('Error fetching wallet data:', fetchError);
       setError('Failed to load wallet data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchExchangeRate = async () => {
+    try {
+      const response = await axiosInstance.get('/wallets/exchange-rate/');
+      if (response.data.usd_to_syp) {
+        setNewExchangeRate(response.data.usd_to_syp.toString());
+      }
+    } catch (rateError) {
+      console.error('Error fetching exchange rate:', rateError);
+    }
+  };
+
+  const refreshExchangeRates = async () => {
+    try {
+      setRefreshingRates(true);
+      setUpdateError(null);
+      setSuccessMessage(null);
+
+      const response = await axiosInstance.post('/wallets/refresh-exchange-rates/');
+      setSuccessMessage('تم تحديث أسعار الصرف تلقائياً');
+      setTimeout(() => {
+        fetchWalletData();
+        setSuccessMessage(null);
+      }, 2000);
+    } catch (refreshError) {
+      console.error('Error refreshing exchange rates:', refreshError);
+      if (refreshError.response?.data?.detail) {
+        setUpdateError(refreshError.response.data.detail);
+      } else if (refreshError.response?.data?.error) {
+        setUpdateError(refreshError.response.data.error);
+      } else {
+        setUpdateError('Failed to refresh exchange rates');
+      }
+    } finally {
+      setRefreshingRates(false);
+    }
+  };
+
+  const updateExchangeRate = async () => {
+    if (!newExchangeRate || isNaN(parseFloat(newExchangeRate)) || parseFloat(newExchangeRate) <= 0) {
+      setUpdateError('Please enter a valid exchange rate greater than 0');
+      return;
+    }
+
+    try {
+      setUpdateLoading(true);
+      setUpdateError(null);
+      setSuccessMessage(null);
+
+      await axiosInstance.put('/wallets/exchange-rate/', {
+        usd_to_syp: parseFloat(newExchangeRate),
+      });
+
+      setSuccessMessage('تم تحديث سعر الصرف بنجاح');
+      setEditingRate(false);
+
+      setTimeout(() => {
+        fetchWalletData();
+        setSuccessMessage(null);
+      }, 2000);
+    } catch (updateoError) {
+      console.error('Error updating exchange rate:', updateError);
+      if (updateoError.response?.data?.detail) {
+        setUpdateError(updateoError.response.data.detail);
+      } else if (updateoError.response?.data?.error) {
+        setUpdateError(updateoError.response.data.error);
+      } else {
+        setUpdateError('Failed to update exchange rate');
+      }
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const startEditing = () => {
+    setEditingRate(true);
+    setUpdateError(null);
+    setSuccessMessage(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingRate(false);
+    setUpdateError(null);
+    setSuccessMessage(null);
+    if (walletData?.exchange_rates?.usd_to_syp?.value) {
+      setNewExchangeRate(walletData.exchange_rates.usd_to_syp.value.toString());
     }
   };
 
@@ -30,22 +128,26 @@ const Currencies = () => {
     fetchWalletData();
   }, []);
 
-  // Format currency values
   const formatCurrency = (amount, currency) => {
     if (currency === 'SYP') {
       return `ل.س ${parseFloat(amount).toLocaleString(undefined, {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })}`;
-    } else {
-      return `$${parseFloat(amount).toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        maximumFractionDigits: 2,
       })}`;
     }
+    return `$${parseFloat(amount).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
-  // Mock data structure for fallback
+  const formatRate = (rate, decimals = 2) => {
+    return parseFloat(rate).toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  };
+
   const currenciesData = walletData ? [
     {
       name: 'US Dollar',
@@ -56,7 +158,7 @@ const Currencies = () => {
       balance: formatCurrency(walletData.USD?.total || 0, 'USD'),
       available: formatCurrency(walletData.USD?.available || 0, 'USD'),
       pending: formatCurrency(walletData.USD?.pending || 0, 'USD'),
-      exchangeRate: `1 USD = ${walletData.exchange_rates?.usd_to_syp?.value || 0} SYP`
+      exchangeRate: `1 USD = ${walletData.exchange_rates?.usd_to_syp?.value || 0} SYP`,
     },
     {
       name: 'Syrian Pound',
@@ -67,26 +169,25 @@ const Currencies = () => {
       balance: formatCurrency(walletData.SYP?.total || 0, 'SYP'),
       available: formatCurrency(walletData.SYP?.available || 0, 'SYP'),
       pending: formatCurrency(walletData.SYP?.pending || 0, 'SYP'),
-      exchangeRate: `1 SYP = ${walletData.exchange_rates?.syp_to_usd?.value || 0} USD`
-    }
+      exchangeRate: `1 SYP = ${walletData.exchange_rates?.syp_to_usd?.value || 0} USD`,
+    },
   ] : [];
 
-  // Exchange rates data from backend
   const exchangeRates = walletData ? [
     {
       from: 'USD',
       to: 'SYP',
       rate: walletData.exchange_rates?.usd_to_syp?.value || 0,
       change: walletData.exchange_rates?.usd_to_syp?.change || 0,
-      trend: (walletData.exchange_rates?.usd_to_syp?.change || 0) >= 0 ? 'up' : 'down'
+      trend: (walletData.exchange_rates?.usd_to_syp?.change || 0) >= 0 ? 'up' : 'down',
     },
     {
       from: 'SYP',
       to: 'USD',
       rate: walletData.exchange_rates?.syp_to_usd?.value || 0,
       change: walletData.exchange_rates?.syp_to_usd?.change || 0,
-      trend: (walletData.exchange_rates?.syp_to_usd?.change || 0) >= 0 ? 'up' : 'down'
-    }
+      trend: (walletData.exchange_rates?.syp_to_usd?.change || 0) >= 0 ? 'up' : 'down',
+    },
   ] : [];
 
   if (loading) {
@@ -108,6 +209,7 @@ const Currencies = () => {
           <div className="flex justify-center items-center h-40">
             <div className="text-lg text-red-500">{error}</div>
             <button
+              type="button"
               onClick={fetchWalletData}
               className="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
@@ -133,15 +235,39 @@ const Currencies = () => {
           />
         </div>
 
-        {/* Refresh Button */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between mb-4">
           <button
+            type="button"
             onClick={fetchWalletData}
-            className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition"
+            className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition"
           >
-            Refresh
+            <MdRefresh className="text-sm" />
+            Refresh Data
           </button>
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={refreshExchangeRates}
+              disabled={refreshingRates}
+              className="flex items-center gap-2 px-3 py-2 bg-green-500 text-white rounded text-sm hover:bg-green-600 disabled:opacity-50 transition"
+            >
+              <MdUpdate className="text-sm" />
+              {refreshingRates ? 'Updating...' : 'Update Rates'}
+            </button>
+          )}
         </div>
+
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+            {successMessage}
+          </div>
+        )}
+        {updateError && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {updateError}
+          </div>
+        )}
 
         <div className="space-y-4 mb-8">
           {currenciesData?.map((currency, index) => (
@@ -178,11 +304,66 @@ const Currencies = () => {
         </div>
 
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <MdSwapVert className="text-xl" />
-            <p className="font-semibold text-lg">Exchange Rates</p>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <MdSwapVert className="text-xl" />
+              <p className="font-semibold text-lg">Exchange Rates</p>
+            </div>
           </div>
-          <div className="space-y-3">
+
+          {isAdmin && editingRate && (
+            <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-semibold">Update Exchange Rate Manually</p>
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <AiOutlineClose />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    USD to SYP Rate
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={newExchangeRate}
+                    onChange={(e) => setNewExchangeRate(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded dark:bg-gray-600 dark:border-gray-500"
+                    placeholder="Enter USD to SYP rate"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Current: 1 USD = {formatRate(walletData?.exchange_rates?.usd_to_syp?.value || 0)} SYP
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={updateExchangeRate}
+                    disabled={updateLoading}
+                    className="flex items-center gap-1 px-3 py-2 bg-green-500 text-white rounded text-sm hover:bg-green-600 disabled:opacity-50"
+                  >
+                    <AiOutlineSave />
+                    {updateLoading ? 'Updating...' : 'Update Rate'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    className="px-3 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3 mb-4">
             {exchangeRates?.map((rate, index) => (
               <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div>
@@ -190,10 +371,9 @@ const Currencies = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">Current Rate</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold">{rate.rate.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 6
-                  })}</p>
+                  <p className="font-bold">
+                    {formatRate(rate.rate, rate.from === 'SYP' ? 6 : 2)}
+                  </p>
                   <div className={`flex items-center gap-1 text-xs ${
                     rate.trend === 'up' ? 'text-green-600' : 'text-red-600'
                   }`}
@@ -205,6 +385,19 @@ const Currencies = () => {
               </div>
             ))}
           </div>
+
+          {isAdmin && !editingRate && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={startEditing}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+              >
+                <MdEdit className="text-sm" />
+                Change Exchange Rate
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="border-t dark:border-gray-600 pt-4">
@@ -221,6 +414,14 @@ const Currencies = () => {
             </p>
           </div>
         </div>
+
+        {walletData?.exchange_rates?.last_updated && (
+          <div className="mt-4 pt-4 border-t dark:border-gray-600">
+            <p className="text-xs text-gray-500 text-center">
+              Last updated: {new Date(walletData.exchange_rates.last_updated).toLocaleString()}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

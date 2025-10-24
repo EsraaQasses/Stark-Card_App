@@ -1,12 +1,11 @@
-from datetime import timedelta
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.core.validators import RegexValidator
 from .utils import generate_agent_code
 from django.utils import timezone
 from .validators import validate_avatar_size, validate_avatar_extension, validate_avatar_dimensions
 from django.contrib.auth.hashers import make_password, check_password
-
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 class UserManager(BaseUserManager):
     def create_user(self, name, password=None, email=None, phone=None, role="user", **extra_fields):
@@ -99,15 +98,35 @@ class User(AbstractBaseUser, PermissionsMixin):
             return False
         return self.admin_security.check_second_password(second_password)
 
-    
-    def setup_second_password(self, second_password):
-        """Set up second password for admin"""
-        if self.role != "admin":
-            raise ValueError("Only admin users can set up second password")
-        
-        admin_security, created = AdminSecurity.objects.get_or_create(user=self)
-        admin_security.set_second_password(second_password)
-        return admin_security
+    def is_2fa_enabled(self):
+        """Check if user has 2FA enabled using django-two-factor-auth"""
+        return TOTPDevice.objects.filter(user=self, confirmed=True).exists()
+
+
+class AdminSecurity(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="admin_security")
+    second_password = models.CharField(max_length=128, null=True, blank=True)
+    is_second_password_set = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Admin Security for {self.user.name}"
+
+    def check_second_password(self, second_password):
+        if not self.second_password or not self.is_second_password_set:
+            return False
+        return check_password(second_password, self.second_password)
+
+    def set_second_password(self, second_password):
+        self.second_password = make_password(second_password)
+        self.is_second_password_set = True
+        self.save()
+
+    def is_2fa_enabled(self):
+        """Check if user has 2FA enabled using django-two-factor-auth"""
+        return TOTPDevice.objects.filter(user=self.user, confirmed=True).exists()
+
 
 class PasswordResetToken(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")
@@ -169,28 +188,6 @@ class OTPCode(models.Model):
         return timezone.now() > self.created_at + timedelta(minutes=5)
     
     
-    
-class AdminSecurity(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="admin_security")
-    second_password = models.CharField(max_length=128, null=True, blank=True)  # Hashed second password
-    is_second_password_set = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Admin Security for {self.user.name}"
-    
-    def check_second_password(self, second_password):
-        if not self.second_password or not self.is_second_password_set:
-            return False
-        return check_password(second_password, self.second_password)
-    
-    def set_second_password(self, second_password):
-        self.second_password = make_password(second_password)
-        self.is_second_password_set = True
-        self.save()
-
-
 class AdminLoginSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="admin_sessions")
     session_token = models.CharField(max_length=100, unique=True)

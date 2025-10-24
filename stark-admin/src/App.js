@@ -22,7 +22,6 @@ import Transition from './pages/Dashboard/Transition';
 import Ads from './pages/Dashboard/AdsPage';
 import Sections from './pages/Store/Sections';
 import Products from './pages/Store/Products';
-import Packages from './pages/Store/Packages';
 import Profile from './components/Profile';
 import FullPayments from './components/FullPayments';
 
@@ -31,7 +30,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Component to reset scroll on route change
 const ScrollToTop = () => {
   const { pathname } = useLocation();
 
@@ -42,7 +40,6 @@ const ScrollToTop = () => {
   return null;
 };
 
-// Main App Content
 const AppContent = () => {
   const { setCurrentColor, setCurrentMode, currentMode, activeMenu, currentColor, themeSettings, setThemeSettings } = useStateContext();
   const { user, loading } = useAuth();
@@ -56,24 +53,21 @@ const AppContent = () => {
     }
   }, []);
 
-  // Show loading spinner while checking authentication
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-main-dark-bg">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto" />
           <p className="mt-4 text-gray-600 dark:text-gray-300">Securing your dashboard...</p>
         </div>
       </div>
     );
   }
 
-  // If not authenticated, show login page
   if (!user) {
     return <Login />;
   }
 
-  // Check if user is admin (additional safety check)
   if (user.role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-main-dark-bg">
@@ -86,6 +80,7 @@ const AppContent = () => {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Access Restricted</h2>
           <p className="text-gray-600 dark:text-gray-300 mb-4">This dashboard requires administrator privileges.</p>
           <button
+            type="button"
             onClick={() => {
               localStorage.clear();
               window.location.href = '/login';
@@ -115,7 +110,7 @@ const AppContent = () => {
             </button>
           </TooltipComponent>
         </div>
-        
+
         {activeMenu ? (
           <div className="w-72 fixed sidebar dark:bg-secondary-dark-bg bg-white ">
             <Sidebar />
@@ -125,7 +120,7 @@ const AppContent = () => {
             <Sidebar />
           </div>
         )}
-        
+
         <div
           className={
             activeMenu
@@ -166,7 +161,6 @@ const AppContent = () => {
               {/* Store */}
               <Route path="/sections" element={<ProtectedRoute><Sections /></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-              <Route path="/packages" element={<ProtectedRoute><Packages /></ProtectedRoute>} />
 
               {/* Fallback route */}
               <Route path="*" element={<Navigate to="/" replace />} />
@@ -179,15 +173,12 @@ const AppContent = () => {
   );
 };
 
-// Main App Component
-const App = () => {
-  return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
-    </AuthProvider>
-  );
-};
+const App = () => (
+  <AuthProvider>
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  </AuthProvider>
+);
 
 export default App;

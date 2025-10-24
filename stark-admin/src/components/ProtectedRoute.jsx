@@ -9,7 +9,7 @@ const ProtectedRoute = ({ children, requireAdmin = true }) => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-main-dark-bg">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto" />
           <p className="mt-4 text-gray-600 dark:text-gray-300">Verifying access...</p>
         </div>
       </div>
@@ -34,6 +34,7 @@ const ProtectedRoute = ({ children, requireAdmin = true }) => {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h2>
           <p className="text-gray-600 dark:text-gray-300 mb-4">Admin privileges required to access this page.</p>
           <button
+            type="button"
             onClick={() => window.location.href = '/'}
             className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition"
           >

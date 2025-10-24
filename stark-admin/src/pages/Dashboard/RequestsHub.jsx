@@ -27,27 +27,23 @@ const RequestsHub = () => {
     in_progress: 0,
     objection: 0,
     completed: 0,
-    rejected: 0
+    rejected: 0,
   });
 
   const toolbarOptions = ['Search', 'Refresh'];
 
-  // Fetch requests from backend
   const fetchRequests = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Fetch requests data
+
       const requestsResponse = await axiosInstance.get('/all_requests/admin/requests/');
       setRequestsData(requestsResponse.data);
-      
-      // Fetch statistics
+
       const statsResponse = await axiosInstance.get('/all_requests/admin/requests/stats/');
       setStats(statsResponse.data);
-      
-    } catch (error) {
-      console.error('Error fetching requests:', error);
+    } catch (err) {
+      console.error('Error fetching requests:', err);
       setError('Failed to load requests data');
     } finally {
       setLoading(false);
@@ -58,8 +54,7 @@ const RequestsHub = () => {
     fetchRequests();
   }, []);
 
-  // Filter requests based on selected filters
-  const filteredRequests = requestsData.filter(request => {
+  const filteredRequests = requestsData.filter((request) => {
     const statusMatch = filterStatus === 'All' || request.status === filterStatus;
     const typeMatch = filterType === 'All' || request.request_type === filterType;
     return statusMatch && typeMatch;
@@ -71,7 +66,6 @@ const RequestsHub = () => {
 
   const handleCloseModal = () => {
     setSelectedRequest(null);
-    // Refresh data when modal closes to get updated status
     fetchRequests();
   };
 
@@ -86,14 +80,13 @@ const RequestsHub = () => {
       await axiosInstance.post(`/all_requests/admin/requests/${requestId}/update_status/`, {
         status: newStatus,
         admin_notes: adminNotes,
-        rejection_reason: rejectionReason
+        rejection_reason: rejectionReason,
       });
-      
-      // Refresh data to show updated status
+
       await fetchRequests();
       return true;
-    } catch (error) {
-      console.error('Error updating request status:', error);
+    } catch (err) {
+      console.error('Error updating request status:', err);
       alert('Failed to update request status');
       return false;
     }
@@ -102,48 +95,44 @@ const RequestsHub = () => {
   const handleAddComment = async (requestId, comment, isAdminNote = false) => {
     try {
       await axiosInstance.post(`/all_requests/admin/requests/${requestId}/add_comment/`, {
-        comment: comment,
-        is_admin_note: isAdminNote
+        comment,
+        is_admin_note: isAdminNote,
       });
-      
-      // Refresh data to show new comment
+
       await fetchRequests();
       return true;
-    } catch (error) {
-      console.error('Error adding comment:', error);
+    } catch (err) {
+      console.error('Error adding comment:', err);
       alert('Failed to add comment');
       return false;
     }
   };
 
-  // Status counts for filter dropdown
   const statusCounts = {
     All: requestsData.length,
-    pending: requestsData.filter(r => r.status === 'pending').length,
-    shipping: requestsData.filter(r => r.status === 'shipping').length,
-    in_progress: requestsData.filter(r => r.status === 'in_progress').length,
-    objection: requestsData.filter(r => r.status === 'objection').length,
-    completed: requestsData.filter(r => r.status === 'completed').length,
-    rejected: requestsData.filter(r => r.status === 'rejected').length,
+    pending: requestsData.filter((r) => r.status === 'pending').length,
+    shipping: requestsData.filter((r) => r.status === 'shipping').length,
+    in_progress: requestsData.filter((r) => r.status === 'in_progress').length,
+    objection: requestsData.filter((r) => r.status === 'objection').length,
+    completed: requestsData.filter((r) => r.status === 'completed').length,
+    rejected: requestsData.filter((r) => r.status === 'rejected').length,
   };
 
-  // Type counts for filter dropdown
   const typeCounts = {
     All: requestsData.length,
-    payment: requestsData.filter(r => r.request_type === 'payment').length,
-    support: requestsData.filter(r => r.request_type === 'support').length,
-    refund: requestsData.filter(r => r.request_type === 'refund').length,
-    other: requestsData.filter(r => r.request_type === 'other').length,
+    payment: requestsData.filter((r) => r.request_type === 'payment').length,
+    support: requestsData.filter((r) => r.request_type === 'support').length,
+    refund: requestsData.filter((r) => r.request_type === 'refund').length,
+    other: requestsData.filter((r) => r.request_type === 'other').length,
   };
 
-  // Request type template with styling
   const requestTypeTemplate = (props) => {
     const request = props;
     const typeConfig = {
-      'payment': { color: 'bg-yellow-100 text-yellow-800', icon: '💳', label: 'Payment' },
-      'support': { color: 'bg-blue-100 text-blue-800', icon: '🛟', label: 'Support' },
-      'refund': { color: 'bg-red-100 text-red-800', icon: '↩️', label: 'Refund' },
-      'other': { color: 'bg-gray-100 text-gray-800', icon: '📋', label: 'Other' }
+      payment: { color: 'bg-yellow-100 text-yellow-800', icon: '💳', label: 'Payment' },
+      support: { color: 'bg-blue-100 text-blue-800', icon: '🛟', label: 'Support' },
+      refund: { color: 'bg-red-100 text-red-800', icon: '↩️', label: 'Refund' },
+      other: { color: 'bg-gray-100 text-gray-800', icon: '📋', label: 'Other' },
     };
 
     const config = typeConfig[request.request_type] || { color: 'bg-gray-100 text-gray-800', icon: '📋', label: request.request_type };
@@ -155,16 +144,15 @@ const RequestsHub = () => {
     );
   };
 
-  // Status template with styling
   const statusTemplate = (props) => {
     const request = props;
     const statusConfig = {
-      'pending': { color: 'bg-orange-100 text-orange-800', icon: '⏳', label: 'Pending' },
-      'shipping': { color: 'bg-yellow-100 text-yellow-800', icon: '🚚', label: 'Shipping' },
-      'in_progress': { color: 'bg-blue-100 text-blue-800', icon: '🔍', label: 'In Progress' },
-      'objection': { color: 'bg-purple-100 text-purple-800', icon: '⚠️', label: 'Objection' },
-      'completed': { color: 'bg-green-100 text-green-800', icon: '✅', label: 'Completed' },
-      'rejected': { color: 'bg-red-100 text-red-800', icon: '❌', label: 'Rejected' }
+      pending: { color: 'bg-orange-100 text-orange-800', icon: '⏳', label: 'Pending' },
+      shipping: { color: 'bg-yellow-100 text-yellow-800', icon: '🚚', label: 'Shipping' },
+      in_progress: { color: 'bg-blue-100 text-blue-800', icon: '🔍', label: 'In Progress' },
+      objection: { color: 'bg-purple-100 text-purple-800', icon: '⚠️', label: 'Objection' },
+      completed: { color: 'bg-green-100 text-green-800', icon: '✅', label: 'Completed' },
+      rejected: { color: 'bg-red-100 text-red-800', icon: '❌', label: 'Rejected' },
     };
 
     const config = statusConfig[request.status] || { color: 'bg-gray-100 text-gray-800', icon: '❓', label: request.status };
@@ -176,7 +164,6 @@ const RequestsHub = () => {
     );
   };
 
-  // User template
   const userTemplate = (props) => {
     const request = props;
     return (
@@ -193,11 +180,10 @@ const RequestsHub = () => {
     );
   };
 
-  // Amount template
   const amountTemplate = (props) => {
     const request = props;
     if (!request.amount) return <span className="text-gray-400">-</span>;
-    
+
     return (
       <span className="font-semibold">
         {request.amount} {request.currency?.toUpperCase() || ''}
@@ -205,7 +191,6 @@ const RequestsHub = () => {
     );
   };
 
-  // Date template
   const dateTemplate = (props) => {
     const request = props;
     return (
@@ -215,11 +200,11 @@ const RequestsHub = () => {
     );
   };
 
-  // Actions template
   const actionsTemplate = (props) => {
     const request = props;
     return (
       <button
+        type="button"
         onClick={() => handleReviewDetails(request)}
         className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-xs font-medium"
       >
@@ -246,6 +231,7 @@ const RequestsHub = () => {
         <div className="flex justify-center items-center h-40">
           <div className="text-lg text-red-500">{error}</div>
           <button
+            type="button"
             onClick={fetchRequests}
             className="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -258,14 +244,14 @@ const RequestsHub = () => {
 
   return (
     <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
-      <Header 
-        category="Request Management" 
-        title="Requests Hub" 
+      <Header
+        category="Request Management"
+        title="Requests Hub"
       />
 
-      {/* Refresh Button */}
       <div className="flex justify-end mb-4">
         <button
+          type="button"
           onClick={fetchRequests}
           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm flex items-center gap-2"
         >
@@ -273,7 +259,6 @@ const RequestsHub = () => {
         </button>
       </div>
 
-      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-blue-800 font-semibold">Total Requests</p>
@@ -293,12 +278,11 @@ const RequestsHub = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Status:</label>
-          <select 
-            value={filterStatus} 
+          <select
+            value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm"
           >
@@ -309,11 +293,11 @@ const RequestsHub = () => {
             ))}
           </select>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Type:</label>
-          <select 
-            value={filterType} 
+          <select
+            value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm"
           >
@@ -324,9 +308,10 @@ const RequestsHub = () => {
             ))}
           </select>
         </div>
-        
+
         <div className="flex items-end">
-          <button 
+          <button
+            type="button"
             onClick={() => { setFilterStatus('All'); setFilterType('All'); }}
             className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
           >
@@ -335,13 +320,12 @@ const RequestsHub = () => {
         </div>
       </div>
 
-      {/* Requests Grid */}
       {filteredRequests.length > 0 ? (
         <GridComponent
           dataSource={filteredRequests}
-          allowPaging={true}
-          allowSorting={true}
-          allowFiltering={true}
+          allowPaging
+          allowSorting
+          allowFiltering
           pageSettings={{ pageSize: 10 }}
           toolbar={toolbarOptions}
           height={400}
@@ -349,59 +333,59 @@ const RequestsHub = () => {
           toolbarClick={handleToolbarClick}
         >
           <ColumnsDirective>
-            <ColumnDirective 
-              field="id" 
-              headerText="Request ID" 
-              width="120" 
-              textAlign="Center" 
-              isPrimaryKey={true}
+            <ColumnDirective
+              field="id"
+              headerText="Request ID"
+              width="120"
+              textAlign="Center"
+              isPrimaryKey
             />
-            
-            <ColumnDirective 
-              headerText="User" 
-              width="200" 
+
+            <ColumnDirective
+              headerText="User"
+              width="200"
               textAlign="Left"
               template={userTemplate}
             />
-            
-            <ColumnDirective 
-              headerText="Request Type" 
-              width="150" 
+
+            <ColumnDirective
+              headerText="Request Type"
+              width="150"
               textAlign="Center"
               template={requestTypeTemplate}
             />
-            
-            <ColumnDirective 
-              headerText="Status" 
-              width="130" 
+
+            <ColumnDirective
+              headerText="Status"
+              width="130"
               textAlign="Center"
               template={statusTemplate}
             />
-            
-            <ColumnDirective 
-              headerText="Title" 
+
+            <ColumnDirective
+              headerText="Title"
               field="title"
-              width="180" 
+              width="180"
               textAlign="Left"
             />
-            
-            <ColumnDirective 
-              headerText="Amount" 
-              width="120" 
+
+            <ColumnDirective
+              headerText="Amount"
+              width="120"
               textAlign="Center"
               template={amountTemplate}
             />
-            
-            <ColumnDirective 
-              headerText="Submitted" 
-              width="120" 
+
+            <ColumnDirective
+              headerText="Submitted"
+              width="120"
               textAlign="Center"
               template={dateTemplate}
             />
-            
-            <ColumnDirective 
-              headerText="Actions" 
-              width="100" 
+
+            <ColumnDirective
+              headerText="Actions"
+              width="100"
               textAlign="Center"
               template={actionsTemplate}
             />
@@ -413,14 +397,13 @@ const RequestsHub = () => {
           <div className="text-6xl mb-4">📋</div>
           <p className="text-gray-500 text-lg">No requests found</p>
           <p className="text-gray-400 mt-2">
-            {requestsData.length === 0 
-              ? "There are no requests in the system yet." 
-              : "No requests match your current filters."}
+            {requestsData.length === 0
+              ? 'There are no requests in the system yet.'
+              : 'No requests match your current filters.'}
           </p>
         </div>
       )}
 
-      {/* Review Modal */}
       {selectedRequest && (
         <RequestReviewModal
           request={selectedRequest}

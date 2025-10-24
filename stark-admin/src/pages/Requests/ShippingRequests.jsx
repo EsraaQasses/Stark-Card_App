@@ -18,7 +18,6 @@ const ShippingRequests = () => {
   const [error, setError] = useState(null);
   const toolbarOptions = ['Search'];
 
-  // Fetch shipping data from backend
   useEffect(() => {
     fetchShippingData();
   }, []);
@@ -29,13 +28,8 @@ const ShippingRequests = () => {
       setError(null);
       const response = await axiosInstance.get('/shipping/');
       setShippingData(response.data);
-    } catch (error) {
-      console.error('Error fetching shipping data:', error);
+    } catch (err) {
       setError('Failed to load shipping requests');
-      if (error.response?.status === 401) {
-        // Redirect to login will be handled by interceptor
-        return;
-      }
     } finally {
       setLoading(false);
     }
@@ -45,14 +39,13 @@ const ShippingRequests = () => {
     try {
       await axiosInstance.post(`/shipping/${shippingId}/update_status/`, {
         status: 'approved',
-        admin_notes: 'Payment verified and approved'
+        admin_notes: 'Payment verified and approved',
       });
-      
+
       alert(`Shipping request #${shippingId} approved successfully!`);
-      fetchShippingData(); // Refresh data
-    } catch (error) {
-      console.error('Error approving shipping:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to approve shipping request';
+      fetchShippingData();
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to approve shipping request';
       alert(`Error: ${errorMessage}`);
     }
   };
@@ -64,14 +57,13 @@ const ShippingRequests = () => {
     try {
       await axiosInstance.post(`/shipping/${shippingId}/update_status/`, {
         status: 'rejected',
-        admin_notes: reason
+        admin_notes: reason,
       });
-      
+
       alert(`Shipping request #${shippingId} rejected.`);
-      fetchShippingData(); // Refresh data
-    } catch (error) {
-      console.error('Error rejecting shipping:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to reject shipping request';
+      fetchShippingData();
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to reject shipping request';
       alert(`Error: ${errorMessage}`);
     }
   };
@@ -99,25 +91,34 @@ const ShippingRequests = () => {
     );
   };
 
-  const statusTemplate = (props) => {
-    const status = props.status;
+  const getStatusConfig = (status) => {
     const statusColors = {
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'approved': 'bg-green-100 text-green-800',
-      'rejected': 'bg-red-100 text-red-800',
-      'processing': 'bg-blue-100 text-blue-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+      processing: 'bg-blue-100 text-blue-800',
     };
 
     const statusText = {
-      'pending': 'Pending',
-      'approved': 'Approved',
-      'rejected': 'Rejected',
-      'processing': 'Processing',
+      pending: 'Pending',
+      approved: 'Approved',
+      rejected: 'Rejected',
+      processing: 'Processing',
     };
 
+    return {
+      color: statusColors[status] || 'bg-gray-100 text-gray-800',
+      text: statusText[status] || status,
+    };
+  };
+
+  const statusTemplate = (props) => {
+    const { status } = props;
+    const config = getStatusConfig(status);
+
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
-        {statusText[status] || status}
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+        {config.text}
       </span>
     );
   };
@@ -147,12 +148,14 @@ const ShippingRequests = () => {
     return (
       <div className="flex gap-2 justify-center">
         <button
+          type="button"
           className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-xs"
           onClick={() => handleApprove(shipping.id)}
         >
           Approve
         </button>
         <button
+          type="button"
           className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs"
           onClick={() => handleReject(shipping.id)}
         >
@@ -169,7 +172,7 @@ const ShippingRequests = () => {
         {date.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
-          day: 'numeric'
+          day: 'numeric',
         })}
       </span>
     );
@@ -200,66 +203,66 @@ const ShippingRequests = () => {
   return (
     <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white dark:bg-secondary-dark-bg rounded-3xl">
       <Header category="Shipping" title="Shipping Requests Management" />
-      
+
       <GridComponent
         dataSource={shippingData}
-        allowPaging={true}
-        allowSorting={true}
-        allowFiltering={true}
+        allowPaging
+        allowSorting
+        allowFiltering
         toolbar={toolbarOptions}
         pageSettings={{ pageSize: 10 }}
         height={400}
         enableHover={false}
       >
         <ColumnsDirective>
-          <ColumnDirective 
-            field="id" 
-            headerText="ID" 
-            width="80" 
-            textAlign="Center" 
-            isPrimaryKey={true}
+          <ColumnDirective
+            field="id"
+            headerText="ID"
+            width="80"
+            textAlign="Center"
+            isPrimaryKey
           />
-          
-          <ColumnDirective 
-            headerText="Customer" 
-            width="220" 
+
+          <ColumnDirective
+            headerText="Customer"
+            width="220"
             textAlign="Left"
             template={customerTemplate}
           />
-          
-          <ColumnDirective 
-            headerText="Amount" 
-            width="120" 
+
+          <ColumnDirective
+            headerText="Amount"
+            width="120"
             textAlign="Center"
             template={amountTemplate}
           />
-          
-          <ColumnDirective 
-            field="request_details.title" 
-            headerText="Description" 
-            width="180" 
-            textAlign="Center" 
+
+          <ColumnDirective
+            field="request_details.title"
+            headerText="Description"
+            width="180"
+            textAlign="Center"
           />
-          
-          <ColumnDirective 
-            field="created_at" 
-            headerText="Request Date" 
-            width="130" 
+
+          <ColumnDirective
+            field="created_at"
+            headerText="Request Date"
+            width="130"
             textAlign="Center"
             template={dateTemplate}
           />
-          
-          <ColumnDirective 
-            field="status" 
-            headerText="Status" 
-            width="110" 
+
+          <ColumnDirective
+            field="status"
+            headerText="Status"
+            width="110"
             textAlign="Center"
             template={statusTemplate}
           />
-          
-          <ColumnDirective 
-            headerText="Actions" 
-            width="180" 
+
+          <ColumnDirective
+            headerText="Actions"
+            width="180"
             textAlign="Center"
             template={actionTemplate}
           />
