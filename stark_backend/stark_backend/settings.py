@@ -22,7 +22,7 @@ THIRD_PARTY_API_FERNET_KEY = os.getenv('THIRD_PARTY_API_FERNET_KEY')
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 # Validate required environment variables
-required_env_vars = ['SECRET_KEY', 'THIRD_PARTY_API_FERNET_KEY']
+required_env_vars = ['SECRET_KEY', 'THIRD_PARTY_API_FERNET_KEY', 'EMAIL_HOST_PASSWORD']
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise ValueError(f"Missing environment variables: {', '.join(missing_vars)}")
@@ -253,20 +253,18 @@ if not DEBUG:
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Email Configuration
-if DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    DEFAULT_FROM_EMAIL = 'cardstark98@gmail.com'
-    SERVER_EMAIL = 'cardstark98@gmail.com'
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'cardstark98@gmail.com')
-    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'fpjbwyphmajshwza')
-    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'cardstark98@gmail.com')
-    SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'cardstark98@gmail.com')
+# Email Configuration - FIXED: Always use SMTP to send real emails
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'cardstark98@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'gdnbojvgqywuolsu')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'cardstark98@gmail.com')
+SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'cardstark98@gmail.com')
+
+# Email timeout settings
+EMAIL_TIMEOUT = 30  # seconds
 
 # Security Settings
 SECURE_BROWSER_XSS_FILTER = True
@@ -322,9 +320,36 @@ ADMINS = [
     ('Mohammed Zair', 'mohammed.zair.job@gmail.com'),
 ]
 
+# Logging configuration for email debugging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'email_debug.log',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
 # Final startup message
 print(f"🚀 Stark Backend Settings Loaded - DEBUG: {DEBUG}")
-print(f"📧 Email configured for: {DEFAULT_FROM_EMAIL}")
+print(f"📧 Email configured for: {EMAIL_HOST_USER}")
 print(f"🔐 Admin Security: 3-Step Login Enabled")
 print(f"🌐 Allowed Hosts: {ALLOWED_HOSTS}")
-print(f"🔒 2FA System: Custom TOTP Implementation")
+print(f"🔒 Email Backend: {EMAIL_BACKEND}")
+print(f"📨 SMTP Server: {EMAIL_HOST}:{EMAIL_PORT}")

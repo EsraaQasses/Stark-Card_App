@@ -107,6 +107,7 @@ class AdminSecurity(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="admin_security")
     second_password = models.CharField(max_length=128, null=True, blank=True)
     is_second_password_set = models.BooleanField(default=False)
+    backup_codes = models.JSONField(blank=True, null=True, default=list)  # ADD THIS FIELD
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -123,11 +124,22 @@ class AdminSecurity(models.Model):
         self.is_second_password_set = True
         self.save()
 
+    def verify_totp(self, token):
+        """Verify TOTP token using django-otp"""
+        try:
+            devices = TOTPDevice.objects.filter(user=self.user, confirmed=True)
+            for device in devices:
+                if device.verify_token(token):
+                    return True
+            return False
+        except Exception:
+            return False
+
+    @property
     def is_2fa_enabled(self):
-        """Check if user has 2FA enabled using django-two-factor-auth"""
+        """Check if user has 2FA enabled"""
         return TOTPDevice.objects.filter(user=self.user, confirmed=True).exists()
-
-
+        
 class PasswordResetToken(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")
     token = models.CharField(max_length=100, unique=True)

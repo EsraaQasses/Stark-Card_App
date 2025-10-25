@@ -205,7 +205,15 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             except ExternalProduct.DoesNotExist:
                 raise serializers.ValidationError({"external_product_id": "External product not found"})
         
+        # ✅ FIX: Create the product instance
         product = Product.objects.create(**validated_data)
+        
+        # ✅ FIX: Create requirements
+        for req_data in requirements_data:
+            ProductRequirement.objects.create(product=product, **req_data)
+        
+        # ✅ FIX: Return the created instance
+        return product  # THIS WAS MISSING
 
     def update(self, instance, validated_data):
         requirements_data = validated_data.pop('requirements', None)

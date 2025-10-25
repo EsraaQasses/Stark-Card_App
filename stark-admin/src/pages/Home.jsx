@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { GoDot } from "react-icons/go";
+import { GoPrimitiveDot } from "react-icons/go";
 import { Link } from "react-router-dom";
 import { Stacked } from "../components";
 import { useStateContext } from "../contexts/ContextProvider";
@@ -325,13 +325,13 @@ const Home = () => {
             <div className="flex items-center gap-4">
               <p className="flex items-center gap-2 text-gray-600 hover:drop-shadow-xl">
                 <span>
-                  <GoDot className="text-blue-500" />
+                  <GoPrimitiveDot className="text-blue-500" />
                 </span>
                 <span>USD Transactions</span>
               </p>
               <p className="flex items-center gap-2 text-green-400 hover:drop-shadow-xl">
                 <span>
-                  <GoDot />
+                  <GoPrimitiveDot />
                 </span>
                 <span>SYP Transactions</span>
               </p>

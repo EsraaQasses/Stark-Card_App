@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    AdminLoginView, VerifyEmailView, verify_email, RegisterView, 
+    AdminLoginView, TwoFAStatusView, VerifyEmailView, verify_email, RegisterView, 
     UserLoginView, UserProfileView, VerifyOTPView, ChangePasswordView, 
     LogoutView, ResetPasswordView, ForgotPasswordView, resend_otp,
     ban_user, unban_user, list_users, promote_to_sub_admin, user_list, user_stats,
@@ -56,6 +56,7 @@ urlpatterns = [
     path('2fa/verify/', TwoFactorVerifyView.as_view(), name='2fa-verify'),
     path('2fa/disable/', TwoFactorDisableView.as_view(), name='2fa-disable'),
     path('2fa/status/', TwoFactorStatusView.as_view(), name='2fa-status'),
+    path('2fa/status/', TwoFAStatusView.as_view(), name='2fa-status'),
     
     # Admin profile management
     path("admin/profile/", AdminProfileUpdateView.as_view(), name="admin-profile-update"),

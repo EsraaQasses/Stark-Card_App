@@ -87,7 +87,7 @@ class AdminStep2LoginSerializer(serializers.Serializer):
 # -------------------- Admin Step 3 Serializer --------------------
 class AdminStep3LoginSerializer(serializers.Serializer):
     session_token = serializers.CharField()
-    token = serializers.CharField(max_length=6)  # For both OTP and 2FA
+    token = serializers.CharField(max_length=6)
 
     def validate(self, data):
         session_token = data["session_token"]
@@ -110,15 +110,14 @@ class AdminStep3LoginSerializer(serializers.Serializer):
         user = session.user
         admin_security = user.admin_security
         
-        # --- START CORE VALIDATION LOGIC ---
+        validation_success = False
         
         # 1. Check for 2FA/TOTP first
         if admin_security.is_2fa_enabled:
-            # Use TOTP 2FA (from django_otp or custom implementation)
-            if not admin_security.verify_totp(token):
-                raise serializers.ValidationError("Invalid 2FA token")
+            # Use the new verify_totp method
+            validation_success = admin_security.verify_totp(token)
         
-        # 2. Fallback to Email OTP if 2FA is NOT enabled but required by settings
+        # 2. Fallback to Email OTP
         elif getattr(settings, 'ADMIN_OTP_REQUIRED', True):
             otp = OTPCode.objects.filter(
                 user=user, 
@@ -126,18 +125,15 @@ class AdminStep3LoginSerializer(serializers.Serializer):
                 is_used=False
             ).order_by('-created_at').first()
 
-            # Validate OTP existence and expiry
             otp_expiry_minutes = getattr(settings, 'ADMIN_OTP_EXPIRY_MINUTES', 5)
-            if not otp or timezone.now() > otp.created_at + timedelta(minutes=otp_expiry_minutes):
-                raise serializers.ValidationError(f"Invalid or expired OTP. Code expires in {otp_expiry_minutes} minutes.")
-            
-            # Mark OTP as used
-            otp.is_used = True
-            otp.save()
+            if otp and timezone.now() <= otp.created_at + timedelta(minutes=otp_expiry_minutes):
+                validation_success = True
+                otp.is_used = True
+                otp.save()
         
+        if not validation_success:
+            raise serializers.ValidationError("Invalid authentication token")
 
-        # --- END CORE VALIDATION LOGIC ---
-        
         data["session"] = session
         data["user"] = user
         return data
@@ -651,6 +647,7 @@ class Setup2FASerializer(serializers.Serializer):
         if not hasattr(user, 'admin_security'):
             raise serializers.ValidationError("Admin security not set up")
         
+        # Use the new verify_totp method
         if not user.admin_security.verify_totp(token):
             raise serializers.ValidationError("Invalid 2FA token")
         
