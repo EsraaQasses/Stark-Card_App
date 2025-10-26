@@ -221,8 +221,8 @@ CORS_ALLOWED_ORIGINS = [
 
 if not DEBUG:
     CORS_ALLOWED_ORIGINS.extend([
-        "https://yourdomain.com",
-        "https://www.yourdomain.com",
+        "https://stark-card-app.com",
+        "https://www.stark-card-app.com",
     ])
 
 CORS_ALLOW_CREDENTIALS = True
@@ -246,8 +246,8 @@ CSRF_TRUSTED_ORIGINS = [
 
 if not DEBUG:
     CSRF_TRUSTED_ORIGINS.extend([
-        "https://yourdomain.com",
-        "https://www.yourdomain.com",
+        "https://stark-card-app.com",
+        "https://www.stark-card-app.com",
     ])
 
 # Default primary key field type

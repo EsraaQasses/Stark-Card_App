@@ -116,3 +116,7 @@ Watching for file changes with StatReloader
 C:\Users\M S I\Desktop\starkiano\Stark-Card_App-its-here\Stark-Card_App-its-here\Stark-Card_App\stark_backend\users\models.py changed, reloading.
 Watching for file changes with StatReloader
 Watching for file changes with StatReloader
+"GET /api/users/me/ HTTP/1.1" 200 385
+Bad Request: /api/users/2fa/status/
+"GET /api/users/2fa/status/ HTTP/1.1" 400 113
+Watching for file changes with StatReloader

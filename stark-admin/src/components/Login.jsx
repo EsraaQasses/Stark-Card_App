@@ -84,7 +84,7 @@ const Login = () => {
         setStep(2);
       } else {
         setRequires2FA(result.data.requires_2fa || false);
-        setStep(3); // Skip directly to verification
+        setStep(3);
       }
     } else {
       setError(result.error);
@@ -99,7 +99,7 @@ const Login = () => {
 
     if (requiresSetup) {
       try {
-        const response = await fetch('http://localhost:8000/api/users/setup-first-password/', {
+        const response = await fetch('https://37.120.185.235:8000/api/users/setup-first-password/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
